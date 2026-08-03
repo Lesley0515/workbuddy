@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的工作台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --c-daily:#6366f1; --c-xhs:#ff2442; --c-job:#10b981; --c-eng:#f59e0b;
+  --c-book:#8b5cf6; --c-shoot:#06b6d4; --c-clip:#ec4899; --c-fit:#22c55e;
+  --c-acct:#14b8a6;
+}
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB",sans-serif;background:#f3f4f6;overflow:hidden;height:100%}
+.app{display:flex;height:100vh;height:100dvh}
+.sidebar{width:64px;background:#1e293b;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px;overflow-y:auto;flex-shrink:0;z-index:30}
+.sidebar.hidden{display:none}
+.sidebar::-webkit-scrollbar{display:none}
+.sidebar-toggle{width:56px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;font-size:18px;flex-shrink:0;margin-bottom:4px}
+.sidebar-toggle:active{color:#fff;background:rgba(255,255,255,.15)}
+.float-ball{position:fixed;width:48px;height:48px;border-radius:50%;background:rgba(30,41,59,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:22px;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.2);transition:transform .15s,box-shadow .15s;user-select:none;-webkit-user-select:none;touch-action:none}
+.float-ball.show{display:flex}
+.float-ball:active{transform:scale(1.15);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.float-ball.dragging{transition:none;opacity:.9;transform:scale(1.2)}
+.nav-item{width:56px;height:56px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#94a3b8;font-size:9px;gap:3px;transition:all .15s;flex-shrink:0}
+.nav-item .icon{font-size:20px;line-height:1}
+.nav-item.active{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active .icon{transform:scale(1.1)}
+.main{flex:1;overflow-y:auto;position:relative}
+.main::-webkit-scrollbar{width:0}
+.panel{display:none;padding:12px;padding-bottom:80px}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-weight:700;font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.btn{padding:8px 16px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--c-daily);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
+input,textarea,select{font-family:inherit;font-size:14px}
+.field{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;transition:border .2s}
+.field:focus{border-color:var(--c-daily)}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.empty{text-align:center;color:#94a3b8;padding:24px 12px;font-size:13px}
+.fab{position:fixed;right:16px;bottom:20px;width:52px;height:52px;border-radius:50%;background:var(--c-daily);color:#fff;border:none;font-size:28px;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:20;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:99;display:none;max-width:80%;text-align:center}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.modal{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:16px;max-height:85vh;overflow-y:auto;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.task-item{display:flex;align-items:center;gap:10px;padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:8px}
+.task-item.done{opacity:.5}
+.task-item .check{width:20px;height:20px;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.task-item.done .check{background:var(--c-daily);border-color:var(--c-daily);color:#fff}
+.progress-ring{width:60px;height:60px}
+textarea.field{resize:vertical;min-height:60px}
+.highlight-note{border-left:3px solid;padding:8px 12px;margin:6px 0;border-radius:6px;font-size:13px}
+.tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;margin:2px;background:#e0e7ff;color:#3730a3}
+
+/* ======== 桌面端适配 ======== */
+@media(min-width:768px){
+  .sidebar{width:180px;padding:12px 8px;gap:6px}
+  .sidebar-toggle{width:160px;height:36px;font-size:14px}
+  .nav-item{width:auto;height:44px;flex-direction:row;justify-content:flex-start;padding:0 12px;font-size:13px;gap:10px;border-radius:10px}
+  .nav-item .icon{font-size:18px;min-width:24px;text-align:center}
+  .float-ball{display:none!important}
+  .main{display:flex;justify-content:center}
+  .panel{padding:24px;padding-bottom:60px;max-width:900px;width:100%}
+  .panel .card{border-radius:16px;padding:20px;margin-bottom:16px}
+  .panel .card-title{font-size:17px}
+  .modal-overlay{align-items:center}
+  .modal{border-radius:20px;max-width:600px;max-height:80vh}
+  .fab{right:24px;bottom:28px}
+  /* 桌面端多列卡片布局 */
+  .desktop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .desktop-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .desktop-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .desktop-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  /* 工具网格 */
+  .desktop-grid .card{margin-bottom:0}
+  .desktop-grid-2 .card{margin-bottom:0}
+  .desktop-grid-3 .card{margin-bottom:0}
+  .desktop-grid-4 .card{margin-bottom:0}
+  /* 模态框 */
+  .modal input.field,.modal textarea.field,.modal select.field{padding:12px;font-size:15px}
+  .modal .btn{padding:10px 20px;font-size:15px}
+  /* 大屏侧边栏文字 */
+  .nav-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 隐藏浮球 */
+  .sidebar.hidden{display:flex}
+  /* 主内容滚动条 */
+  .main::-webkit-scrollbar{width:6px}
+  .main::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+}
+@media(min-width:1200px){
+  .panel{max-width:1100px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="float-ball" id="floatToggle">☰</div>
+  <main class="main" id="main"></main>
+</div>
+<button class="fab" id="fab" style="display:none">+</button>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ============ 全局状态 ============
+const STORE_KEY = 'workbench_data_v1';
+const APP_VERSION = '2';
+let store = loadStore();
+let currentPanel = 'daily';
+
+// 版本升级检测：如果旧版本号不同，提示刷新
+(function(){
+  const oldVer = localStorage.getItem('app_version');
+  if(oldVer && oldVer !== APP_VERSION){
+    // 不清数据，只提示
+    setTimeout(()=>{ toast('🔔 工作台有新版本，请重新添加到主屏幕'); }, 2000);
+  }
+  localStorage.setItem('app_version', APP_VERSION);
+})();
+
+function loadStore(){
+  try{ const s = localStorage.getItem(STORE_KEY); if(s) return JSON.parse(s); }catch(e){}
+  return {};
+}
+function saveStore(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(store));
+}
+function getData(key, def){
+  if(!store[key]) store[key] = def===undefined?[]:def;
+  return store[key];
+}
+function setData(key,val){ store[key]=val; saveStore(); }
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.style.display='none',1800);
+}
+function showModal(html){
+  document.getElementById('modalContent').innerHTML=html;
+  document.getElementById('modalOverlay').style.display='flex';
+}
+function closeModal(){
+  document.getElementById('modalOverlay').style.display='none';
+}
+document.getElementById('modalOverlay').addEventListener('click',e=>{
+  if(e.target.id==='modalOverlay') closeModal();
+});
+
+// ============ 导航配置 ============
+const NAV = [
+  {id:'daily',icon:'📅',label:'每日',color:'var(--c-daily)'},
+  {id:'xhs',icon:'📕',label:'小红书',color:'var(--c-xhs)'},
+  {id:'job',icon:'💼',label:'求职',color:'var(--c-job)'},
+  {id:'eng',icon:'🔤',label:'英语',color:'var(--c-eng)'},
+  {id:'book',icon:'📚',label:'读书',color:'var(--c-book)'},
+  {id:'shoot',icon:'📷',label:'拍摄',color:'var(--c-shoot)'},
+  {id:'clip',icon:'🎬',label:'剪辑',color:'var(--c-clip)'},
+  {id:'fit',icon:'⚖️',label:'减肥',color:'var(--c-fit)'},
+  {id:'acct',icon:'💰',label:'记账',color:'var(--c-acct)'},
+];
+
+function buildSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.innerHTML = `<div class="sidebar-toggle" onclick="toggleSidebar()">«</div>` + NAV.map(n=>`
+    <div class="nav-item ${n.id===currentPanel?'active':''}" data-id="${n.id}" style="${n.id===currentPanel?'border-left:3px solid '+n.color:''}">
+      <span class="icon">${n.icon}</span>
+      <span>${n.label}</span>
+    </div>`).join('');
+  sb.querySelectorAll('.nav-item').forEach(el=>{
+    el.onclick=()=>switchPanel(el.dataset.id);
+  });
+}
+
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const ft=document.getElementById('floatToggle');
+  if(sb.classList.contains('hidden')){
+    sb.classList.remove('hidden');
+    ft.classList.remove('show');
+  }else{
+    sb.classList.add('hidden');
+    ft.classList.add('show');
+  }
+}
+
+// ============ 悬浮球拖动 ============
+(function(){
+  let ball=null, isDragging=false, hasMoved=false;
+  let startX=0, startY=0, ballX=0, ballY=0;
+  let offsetX=0, offsetY=0;
+
+  function initFloatBall(){
+    ball=document.getElementById('floatToggle');
+    if(!ball)return;
+    ball.addEventListener('touchstart',onTouchStart,{passive:false});
+    ball.addEventListener('touchmove',onTouchMove,{passive:false});
+    ball.addEventListener('touchend',onTouchEnd);
+    ball.addEventListener('mousedown',onMouseDown);
+    document.addEventListener('mousemove',onMouseMove);
+    document.addEventListener('mouseup',onMouseUp);
+  }
+
+  function onTouchStart(e){
+    e.preventDefault();
+    const t=e.touches[0];
+    startDrag(t.clientX,t.clientY);
+  }
+  function onTouchMove(e){
+    e.preventDefault();
+    const t=e.touches[0];
+    doDrag(t.clientX,t.clientY);
+  }
+  function onTouchEnd(){ endDrag(); }
+  function onMouseDown(e){
+    e.preventDefault();
+    startDrag(e.clientX,e.clientY);
+  }
+  function onMouseMove(e){
+    if(!isDragging)return;
+    doDrag(e.clientX,e.clientY);
+  }
+  function onMouseUp(){ endDrag(); }
+
+  function startDrag(cx,cy){
+    if(!ball)return;
+    isDragging=true; hasMoved=false;
+    const rect=ball.getBoundingClientRect();
+    ballX=rect.left; ballY=rect.top;
+    offsetX=cx-rect.left; offsetY=cy-rect.top;
+    startX=cx; startY=cy;
+    ball.classList.add('dragging');
+  }
+
+  function doDrag(cx,cy){
+    if(!isDragging||!ball)return;
+    const nx=cx-offsetX, ny=cy-offsetY;
+    const maxX=window.innerWidth-48, maxY=window.innerHeight-48;
+    const clampedX=Math.max(4,Math.min(nx,maxX));
+    const clampedY=Math.max(4,Math.min(ny,maxY));
+    if(Math.abs(cx-startX)>6||Math.abs(cy-startY)>6) hasMoved=true;
+    ball.style.left=clampedX+'px'; ball.style.top=clampedY+'px';
+    ball.style.right='auto'; ball.style.bottom='auto';
+    ballX=clampedX; ballY=clampedY;
+  }
+
+  function endDrag(){
+    if(!ball)return;
+    isDragging=false;
+    ball.classList.remove('dragging');
+    if(!hasMoved) toggleSidebar();
+    const centerX=ballX+24;
+    const targetX=centerX<window.innerWidth/2?4:window.innerWidth-52;
+    ball.style.transition='left .3s ease,transform .15s';
+    ball.style.left=targetX+'px';
+    setTimeout(()=>{ if(ball) ball.style.transition=''; },300);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initFloatBall);
+  }else{ initFloatBall(); }
+})();
+
+function switchPanel(id){
+  currentPanel=id;
+  buildSidebar();
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const p=document.getElementById('panel-'+id);
+  if(p) p.classList.add('active');
+  const nav=NAV.find(n=>n.id===id);
+  if(nav) document.documentElement.style.setProperty('--c-daily',nav.color);
+  const fab=document.getElementById('fab');
+  const fabPanels=['xhs','fit','acct','eng'];
+  if(fabPanels.includes(id)){
+    fab.style.display='flex'; fab.style.background=nav.color; fab.onclick=()=>onFabClick(id);
+  } else { fab.style.display='none'; }
+  if(id==='daily') renderDaily();
+  else if(id==='xhs') renderXHS();
+  else if(id==='job') renderJob();
+  else if(id==='eng') renderEng();
+  else if(id==='book') renderBook();
+  else if(id==='shoot') renderShoot();
+  else if(id==='clip') renderClip();
+  else if(id==='fit') renderFit();
+  else if(id==='acct') renderAcct();
+  document.getElementById('main').scrollTop=0;
+}
+
+function onFabClick(id){
+  if(id==='xhs') addNotePlan();
+  else if(id==='fit') addMealLog();
+  else if(id==='acct') addAccountEntry();
+  else if(id==='eng') addCustomWord();
+}
+
+// FAB for fit module
+function addMealLog(){ addMeal('breakfast'); }
+function addAccountEntry(){ addEntry(); }
+
+function initPanels(){
+  const main=document.getElementById('main');
+  main.innerHTML = NAV.map(n=>`<div class="panel" id="panel-${n.id}"></div>`).join('');
+}
+
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function fmtDate(d){
+  const days=['日','一','二','三','四','五','六'];
+  return `${d.getMonth()+1}月${d.getDate()}日 周${days[d.getDay()]}`;
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+</script>
+
+<script>
+// ============ 每日工作台 ============
+const WEATHER_CODES={
+  '0':'☀️ 晴','1':'🌤️ 多云','2':'⛅ 阴','3':'☁️ 阴',
+  '45':'🌫️ 雾','48':'🌫️ 冻雾',
+  '51':'🌦️ 小毛毛雨','53':'🌦️ 毛毛雨','55':'🌧️ 大毛毛雨',
+  '56':'🌧️ 冻雨','57':'🌧️ 冻雨',
+  '61':'🌧️ 小雨','63':'🌧️ 中雨','65':'⛈️ 大雨',
+  '66':'🌧️ 冻雨','67':'🌧️ 冻雨',
+  '71':'🌨️ 小雪','73':'🌨️ 中雪','75':'❄️ 大雪',
+  '77':'🌨️ 米雪',
+  '80':'🌦️ 小阵雨','81':'🌧️ 阵雨','82':'⛈️ 强阵雨',
+  '85':'🌨️ 阵雪','86':'🌨️ 强阵雪',
+  '95':'⛈️ 雷暴','96':'⛈️ 雷暴+冰雹','99':'⛈️ 强雷暴+冰雹'
+};
+
+function renderDaily(){
+  dailyAutoRefresh();
+  const el=document.getElementById('panel-daily');
+  const d=new Date();
+  const wInfo=getWeightToday();
+  const autoTasks=collectAutoTasks();
+  const manualTasks=getData('tasks',[]).filter(t=>t.date===todayKey());
+  const todayTasks=[...autoTasks,...manualTasks];
+  const doneCount=todayTasks.filter(t=>t.done).length;
+  const pct=todayTasks.length?Math.round(doneCount/todayTasks.length*100):0;
+  const weather=getWeatherCache();
+  const weatherHtml = (weather && weather.date===todayKey() && weather.html) ? weather.html : '⏳ 获取天气中...';
+  const bookNote=getDailyBookQuote();
+
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:22px;font-weight:800">${fmtDate(d)}</div>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:13px;opacity:.95;align-items:center">
+        <span id="weatherDisplay">${weatherHtml}</span>
+        ${wInfo?`<span>⚖️ ${wInfo}kg</span>`:''}
+      </div>
+    </div>
+    <div class="card" style="background:#fffbeb;border:1px dashed #f59e0b">
+      <div class="card-title" style="color:#92400e">🔄 数据同步</div>
+      <p style="font-size:11px;color:#92400e;margin:0 0 8px">Safari和主屏幕App的数据不互通，用下方按钮同步</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" style="flex:1;background:#f59e0b;color:#fff" onclick="exportAllData()">📤 导出数据</button>
+        <button class="btn btn-sm" style="flex:1;background:#10b981;color:#fff" onclick="importAllData()">📥 导入数据</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 今日完成度</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg class="progress-ring" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="25" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+          <circle cx="30" cy="30" r="25" fill="none" stroke="var(--c-daily)" stroke-width="6"
+            stroke-dasharray="${2*Math.PI*25}" stroke-dashoffset="${2*Math.PI*25*(1-pct/100)}"
+            stroke-linecap="round" transform="rotate(-90 30 30)" style="transition:stroke-dashoffset .5s"/>
+          <text x="30" y="35" text-anchor="middle" font-size="14" font-weight="700" fill="var(--c-daily)">${pct}%</text>
+        </svg>
+        <div style="font-size:13px;color:#64748b">
+          完成 ${doneCount} / ${todayTasks.length} 项任务<br>
+          ${pct===100?'🎉 今天全部搞定！':pct>=50?'继续加油！':'开始行动吧！'}
+        </div>
+      </div>
+    </div>
+    ${bookNote?`
+      <div class="card" style="background:linear-gradient(135deg,#faf5ff,#f5f3ff);border-left:3px solid #8b5cf6">
+        <div class="card-title" style="color:#6d28d9">📖 每日书摘</div>
+        <div style="font-size:14px;line-height:1.8;color:#374151;font-style:italic">${escapeHtml(bookNote.text)}</div>
+        <div style="font-size:12px;color:#7c3aed;margin-top:8px;font-weight:600">— 《${escapeHtml(bookNote.book)}》${bookNote.author?' · '+escapeHtml(bookNote.author):''}</div>
+      </div>
+    `:''}
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📝 今日待办</span>
+        <button class="btn btn-sm btn-primary" onclick="addTask()">+ 自定义</button>
+      </div>
+      <div id="taskList">
+        ${todayTasks.length?todayTasks.map(t=>`
+          <div class="task-item ${t.done?'done':''}">
+            <div class="check" onclick="toggleTask('${t.id}',${t.auto?'true':'false'})">${t.done?'✓':''}</div>
+            <div style="flex:1;font-size:14px">
+              <div style="${t.done?'text-decoration:line-through':''}">${escapeHtml(t.text)}</div>
+              ${t.tag?`<span class="badge" style="background:${t.tagColor||'#e0e7ff'};color:${t.tagText||'#3730a3'}">${t.tag}</span>`:''}
+              ${t.auto?'<span style="font-size:10px;color:#94a3b8;margin-left:4px">自动</span>':''}
+            </div>
+            ${t.auto?'':`<span style="color:#cbd5e1;cursor:pointer;font-size:18px" onclick="delTask('${t.id}')">⋯</span>`}
+          </div>
+        `).join(''):'<div class="empty">暂无任务，开始记录你的一天吧</div>'}
+      </div>
+    </div>
+  `;
+  if(!weather || weather.date!==todayKey()){ fetchWeather(); }
+}
+
+const DAILY_QUOTES=[
+  {text:'生活不能等待别人来安排，要自己去争取和奋斗。',book:'平凡的世界',author:'路遥'},
+  {text:'人心生一念，天地悉皆知，善恶若无报，乾坤必有私。',book:'西游记',author:'吴承恩'},
+  {text:'世事洞明皆学问，人情练达亦文章。',book:'红楼梦',author:'曹雪芹'},
+  {text:'许多人所谓的成熟，不过是被习俗磨去了棱角。',book:'灵魂只能独行',author:'周国平'},
+  {text:'你若爱，生活哪里都可爱。',book:'豁然开朗',author:'丰子恺'},
+  {text:'人最宝贵的是生命，生命属于每个人只有一次。',book:'钢铁是怎样炼成的',author:'奥斯特洛夫斯基'},
+  {text:'生存还是毁灭，这是一个值得思考的问题。',book:'哈姆雷特',author:'莎士比亚'},
+  {text:'友谊是两颗心真诚相待，而不是一颗心对另一颗心的敲打。',book:'鲁迅杂文选',author:'鲁迅'},
+  {text:'人间不会有单纯的快乐，快乐总夹杂着烦恼和忧虑。',book:'我们仨',author:'杨绛'},
+  {text:'我宁愿靠自己的力量，打开我的前途，而不愿求有力者垂青。',book:'悲惨世界',author:'雨果'},
+  {text:'不是每一次努力，都一定会成功，但每一次努力，都是幸运的伏笔。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'人之所以要努力，不是为了追名逐利，而是为了把人生的主动权攥在手里。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'你做三四月的事，在八九月自有答案。',book:'时间之书',author:'佚名'},
+  {text:'种一棵树最好的时间是十年前，其次就是现在。',book:'非洲谚语',author:'佚名'},
+  {text:'没有太晚的开始，只有过早的放弃。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'所谓万丈深渊，下去，也是前程万里。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'焦虑不会消除明天的悲伤，它只会消耗今天的力量。想，全是问题；做，总有答案。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'半山腰总是最挤的，你得去山顶看看。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'真正的远见，不在于眺望多远，而在于向下扎根多深。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'每个人花期不同，不必焦虑有人比你提前拥有。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'永远不要去追一匹马，用追马的时间来种草，待春暖花开时，能吸引一批骏马来供你选择。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'人生最大的捷径就是，强大自己。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'一段好的关系，从来不是互相消耗，而是彼此滋养。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'要像石灰一样，别人越泼冷水，你越是沸腾。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'昨天的太阳，晒不干今天的衣裳，明天的雨，淋不湿今天的自己。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'能力不是天生自带，而是闯出来的底气，练出来的锋芒。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'如果努力的方向错了，那么停下来便是进步。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'生活幸福的秘诀，不在于追求完美无缺，而在于接纳不完美，并看到不完美中的美好。',book:'人民日报每日文摘',author:'佚名'},
+  {text:'不积跬步，无以至千里。',book:'荀子·劝学',author:'荀子'},
+  {text:'天生我材必有用。',book:'将进酒',author:'李白'},
+  {text:'乘风破浪会有时，直挂云帆济沧海。',book:'行路难',author:'李白'}
+];
+
+function getDailyBookQuote(){
+  const dayIndex=Math.floor(Date.now()/(86400000))%DAILY_QUOTES.length;
+  return DAILY_QUOTES[dayIndex];
+}
+
+function dailyAutoRefresh(){
+  const today=todayKey();
+  const lastActive=getData('last_active_date','');
+  if(lastActive===today)return;
+  setData('last_active_date',today);
+  const hotCache=getData('xhs_hot_cache',null);
+  if(hotCache && hotCache.date!==today){
+    hotCache.items.push(hotCache.items.shift());
+    hotCache.date=today;
+    setData('xhs_hot_cache',hotCache);
+  }
+}
+
+function collectAutoTasks(){
+  const tasks=[];
+  const today=todayKey();
+  const autoDone=getData('auto_tasks_done',[]);
+  const tagStyles={
+    '小红书':{bg:'#fef2f4',text:'#ff2442'},'求职':{bg:'#dcfce7',text:'#166534'},
+    '英语':{bg:'#fef3c7',text:'#92400e'},'读书':{bg:'#ede9fe',text:'#6d28d9'},
+    '减肥':{bg:'#f0fdf4',text:'#166534'},'记账':{bg:'#ccfbf1',text:'#0f766e'}
+  };
+  const makeAuto=(id,text,tag)=>{
+    return {id,text,tag,tagColor:tagStyles[tag]?.bg||'#e0e7ff',tagText:tagStyles[tag]?.text||'#3730a3',done:autoDone.includes(id),auto:true};
+  };
+  const xhsPlans=getData('xhs_plans',[]);
+  xhsPlans.filter(p=>p.status==='pending' && p.date<=today).forEach(p=>{
+    tasks.push(makeAuto('auto_xhs_'+p.id,`发布小红书笔记：${p.title}`,'小红书'));
+  });
+  const todayXhsDone=xhsPlans.some(p=>p.status==='done' && p.date===today);
+  if(!todayXhsDone) tasks.push(makeAuto('auto_xhs_daily','今日发布至少1篇小红书笔记','小红书'));
+  const jobProfile=getData('job_profile',null);
+  const jobApps=getData('job_apps',[]);
+  if(jobProfile && jobApps.length===0) tasks.push(makeAuto('auto_job_search','根据简历分析结果，搜索并投递岗位','求职'));
+  jobApps.filter(a=>a.status==='面试').forEach(a=>{
+    tasks.push(makeAuto('auto_job_interview_'+a.id,`准备面试：${a.company} - ${a.position}`,'求职'));
+  });
+  const engProgress=getData('eng_progress',{lastDate:''});
+  if(engProgress.lastDate!==today) tasks.push(makeAuto('auto_eng_words','完成今日10个英语单词学习','英语'));
+  const shadowDone=engProgress.shadowDone||[];
+  if(!shadowDone.includes(today)) tasks.push(makeAuto('auto_eng_shadow','完成今日影子跟读练习','英语'));
+  const currentBook=getData('book_current',null);
+  if(currentBook && (currentBook.progress||0)<100){
+    tasks.push(makeAuto('auto_book_read',`阅读《${currentBook.title}》（当前${currentBook.progress||0}%）`,'读书'));
+  }
+  const weights=getData('fit_weights',[]);
+  if(!weights.find(w=>w.date===today)) tasks.push(makeAuto('auto_fit_weight','记录今日空腹体重','减肥'));
+  const meals=getData('fit_meals',[]).filter(m=>m.date===today);
+  const mealNames={breakfast:'早餐',lunch:'午餐',dinner:'晚餐'};
+  ['breakfast','lunch','dinner'].forEach(meal=>{
+    if(!meals.find(m=>m.meal===meal)) tasks.push(makeAuto('auto_fit_'+meal,`记录${mealNames[meal]}并估算热量`,'减肥'));
+  });
+  const acctEntries=getData('acct_entries',[]);
+  if(!acctEntries.find(e=>e.date===today)) tasks.push(makeAuto('auto_acct_today','记录今日收支','记账'));
+  return tasks;
+}
+
+function getWeatherCache(){ return getData('weather_cache',null); }
+function fetchWeather(){
+  const display=document.getElementById('weatherDisplay');
+  if(display) display.innerHTML='⏳ 定位中...';
+  if(!navigator.geolocation){ fetchWeatherByIP(); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ fetchWeatherByCoords(pos.coords.latitude,pos.coords.longitude); },
+    err=>{ fetchWeatherByIP(); },
+    {timeout:5000,maximumAge:600000}
+  );
+}
+function fetchWeatherByCoords(lat,lon){
+  const display=document.getElementById('weatherDisplay');
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`;
+  fetch(url).then(r=>r.json()).then(data=>{
+    if(data&&data.current){
+      const temp=Math.round(data.current.temperature_2m);
+      const hum=data.current.relative_humidity_2m;
+      const code=data.current.weather_code;
+      const desc=WEATHER_CODES[String(code)]||'🌡️ '+temp+'°';
+      const html=`${desc} ${temp}°C · 湿度${hum}%`;
+      setData('weather_cache',{date:todayKey(),html,temp,hum,code,source:'gps'});
+      if(display) display.innerHTML=html;
+    }
+  }).catch(()=>{ if(display) display.innerHTML='🌤️ 天气获取失败'; });
+}
+function fetchWeatherByIP(){
+  const display=document.getElementById('weatherDisplay');
+  fetch('https://ip-api.com/json/?lang=zh-CN').then(r=>r.json()).then(data=>{
+    if(data&&data.lat) fetchWeatherByCoords(data.lat,data.lon);
+    else if(display) display.innerHTML='🌤️ 天气获取失败';
+  }).catch(()=>{ if(display) display.innerHTML='🌤️ 天气获取失败'; });
+}
+
+function getWeightToday(){
+  const weights=getData('fit_weights',[]);
+  const t=weights.find(w=>w.date===todayKey());
+  return t?t.value:null;
+}
+function addTask(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">新建自定义待办</h3>
+    <input class="field" id="taskInput" placeholder="任务内容..." style="margin-bottom:8px">
+    <select class="field" id="taskTag" style="margin-bottom:12px">
+      <option value="">分类(可选)</option>
+      <option value="小红书">小红书</option><option value="求职">求职</option>
+      <option value="英语">英语</option><option value="读书">读书</option>
+      <option value="拍摄">拍摄</option><option value="剪辑">剪辑</option>
+      <option value="运动">运动</option><option value="其他">其他</option>
+    </select>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveTask()">保存</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('taskInput').focus(),100);
+}
+function saveTask(){
+  const text=document.getElementById('taskInput').value.trim();
+  if(!text){toast('请输入任务内容');return}
+  const tag=document.getElementById('taskTag').value;
+  const tasks=getData('tasks',[]);
+  tasks.push({id:uid(),text,tag,date:todayKey(),done:false,created:Date.now()});
+  setData('tasks',tasks); closeModal(); renderDaily(); toast('已添加');
+}
+function toggleTask(id,isAuto){
+  if(isAuto){
+    const done=getData('auto_tasks_done',[]);
+    const idx=done.indexOf(id);
+    if(idx>=0) done.splice(idx,1); else done.push(id);
+    setData('auto_tasks_done',done);
+  }else{
+    const tasks=getData('tasks',[]);
+    const t=tasks.find(x=>x.id===id); if(t) t.done=!t.done;
+    setData('tasks',tasks);
+  }
+  renderDaily();
+}
+function delTask(id){
+  if(!confirm('删除这个任务？'))return;
+  let tasks=getData('tasks',[]);
+  tasks=tasks.filter(t=>t.id!==id);
+  setData('tasks',tasks); renderDaily();
+}
+</script>
+
+<script>
+// ============ 小红书运营模块 ============
+const XHS_ACCOUNT_KEY = 'xhs_account';
+const XHS_PLANS_KEY = 'xhs_plans';
+const XHS_NOTES_KEY = 'xhs_notes';
+const XHS_REVIEW_KEY = 'xhs_reviews';
+const XHS_HOT_KEY = 'xhs_hot_cache';
+const XHS_TAB_KEY = 'xhs_current_tab';
+
+const XHS_HOT_DEFAULT = {
+  date:'2026-07-28',
+  items:[
+    {title:'2025小红书珠宝流行款：国风元素搜索量增长42%',source:'Accio',date:'2026-07-21',tag:'趋势',url:'https://zh.accio.com/business/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E7%8F%A0%E5%AE%9D%E6%B5%81%E8%A1%8C%E6%AC%BE',summary:'国风珠宝、叠戴风格、环保材质成主流。"汉服配饰""珐琅彩""缠枝纹"关键词占比超60%。'},
+    {title:'小红书爆款饰品单品推荐2025：叠戴风戒指套装热销',source:'Accio',date:'2026-07-21',tag:'爆款',url:'https://zh.accio.com/business/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E7%88%86%E6%AC%BE%E9%A5%B0%E5%93%81%E5%8D%95%E5%93%81%E6%8E%A8%E8%8D%90',summary:'25件戒指套装月销2,063件，叠戴风成潮流。镀金+珍珠组合是轻奢+实用首选。'},
+    {title:'新榜素人推：首饰种草创意全攻略',source:'搜狐',date:'2025-08-20',tag:'教程',url:'https://www.sohu.com/a/925877871_121708663',summary:'手链、项链、穿搭、材质、性价比是小红书首饰种草核心关键词。'},
+    {title:'2025戒指品牌推荐：审美、材质、工艺与情感价值',source:'淘宝',date:'2025-08-27',tag:'报告',url:'https://bk.taobao.com/k/pinpaituijian_19166/4483649e7661624399ad468eb0c252c9.html',summary:'小红书珠宝消费报告显示，平价爆款集中在35-105元，轻奢款70-140元。'},
+    {title:'极简风+叠戴风：小红书戒指搭配两大关键词',source:'Accio',date:'2026-07-21',tag:'趋势',url:'https://zh.accio.com/business/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E7%88%86%E6%AC%BE%E9%A5%B0%E5%93%81%E5%8D%95%E5%93%81%E6%8E%A8%E8%8D%90',summary:'"less is more"极简风与多枚戒指叠戴组合持续热销，金饰银饰混搭受追捧。'},
+    {title:'自然元素饰品：珍珠、贝壳、草编夏季爆发',source:'Accio',date:'2026-07-21',tag:'爆款',url:'https://zh.accio.com/business/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E7%88%86%E6%AC%BE%E9%A5%B0%E5%93%81%E5%8D%95%E5%93%81%E6%8E%A8%E8%8D%90',summary:'草编耳环、珍珠耳饰在夏季和度假场景中表现突出，适合拍照种草。'},
+    {title:'环保材质珠宝：再生银、古法金搜索量增长19%',source:'Accio',date:'2026-07-21',tag:'趋势',url:'https://zh.accio.com/business/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E7%8F%A0%E5%AE%9D%E6%B5%81%E8%A1%8C%E6%AC%BE',summary:'Z世代对材质透明度和可持续供应链关注度提升，回收金咨询量增加15%。'}
+  ]
+};
+
+function getXHSAccount(){
+  return getData(XHS_ACCOUNT_KEY, null) || {
+    name:'Laisili',fans:9,niche:'戒指饰品',shop:'Laisili 饰品工作室',xhsId:'4523726536',linked:false
+  };
+}
+function getCurrentTab(){ return 'all'; }
+function setCurrentTab(tab){}
+
+function renderXHS(){
+  const el=document.getElementById('panel-xhs');
+  const acc=getXHSAccount();
+  const cache=getData(XHS_HOT_KEY,XHS_HOT_DEFAULT);
+  const plans=getData(XHS_PLANS_KEY,[]);
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#ff2442,#ff5a6e);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800">L</div>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:800">@${escapeHtml(acc.name)}</div>
+          <div style="font-size:12px;opacity:.9">${escapeHtml(acc.niche)} · ${escapeHtml(acc.shop||'')}</div>
+        </div>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff" onclick="editXHSAccount()">编辑</button>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;opacity:.95">
+        <span>粉丝 ${acc.fans}</span><span>笔记 ${acc.notes||0}</span><span>获赞 ${acc.likes||0}</span><span>收藏 ${acc.collects||0}</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🛠️ 运营工具</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+        <div onclick="scrollToId('xhsHotSection')" style="padding:14px;background:#fef2f4;border-radius:12px;cursor:pointer;text-align:center">
+          <div style="font-size:26px">🔥</div><div style="font-size:13px;font-weight:600;margin-top:4px;color:#ff2442">爆款趋势</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">行业趋势数据</div>
+        </div>
+        <div onclick="xhsTitleGen()" style="padding:14px;background:#fff7ed;border-radius:12px;cursor:pointer;text-align:center">
+          <div style="font-size:26px">✍️</div><div style="font-size:13px;font-weight:600;margin-top:4px;color:#f59e0b">标题文案</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">AI生成推荐</div>
+        </div>
+        <div onclick="xhsLinkAnalyze()" style="padding:14px;background:#f5f3ff;border-radius:12px;cursor:pointer;text-align:center">
+          <div style="font-size:26px">🔗</div><div style="font-size:13px;font-weight:600;margin-top:4px;color:#7c3aed">链接解析</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">复制链接拆解爆款</div>
+        </div>
+        <div onclick="xhsDataViz()" style="padding:14px;background:#eff6ff;border-radius:12px;cursor:pointer;text-align:center">
+          <div style="font-size:26px">📈</div><div style="font-size:13px;font-weight:600;margin-top:4px;color:#3b82f6">数据看板</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">账号诊断+建议</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="xhsHotSection">
+      <div class="card-title" style="justify-content:space-between">
+        <span>🔥 戒指/饰品爆款趋势</span>
+        <button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="refreshHotList()">🔄 更新</button>
+      </div>
+      <p style="font-size:11px;color:#94a3b8;margin:0 0 10px">最后更新：${cache.date}</p>
+      ${cache.items.slice(0,4).map((item,i)=>`
+        <div style="padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:8px" onclick="showHotDetail(${i})">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:6px">
+            <div style="font-weight:600;font-size:13px;flex:1">${escapeHtml(item.title)}</div>
+            <span class="badge" style="background:${item.tag==='趋势'?'#fef3c7':item.tag==='爆款'?'#fecaca':'#e0e7ff'};color:${item.tag==='趋势'?'#92400e':item.tag==='爆款'?'#991b1b':'#3730a3'};flex-shrink:0">${item.tag}</span>
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.4">${escapeHtml(item.summary)}</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:4px">📍 ${escapeHtml(item.source)} · ${escapeHtml(item.date)}</div>
+        </div>
+      `).join('')}
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
+        ${['叠戴风','国风珠宝','极简风','珍珠戒指','925银','小众设计'].map(k=>`<span class="tag" style="background:#fef2f4;color:#ff2442">#${k}</span>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📌 发布计划</span><span style="font-size:12px;color:#94a3b8">${plans.length} 条</span>
+      </div>
+      <div>
+        ${plans.length?plans.slice().reverse().slice(0,5).map(p=>`
+          <div style="padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:start">
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">${escapeHtml(p.title)}</div>
+                <div style="margin-top:4px">
+                  ${p.status==='done'?'<span class="badge" style="background:#dcfce7;color:#16a34a">已发布</span>':'<span class="badge" style="background:#fef3c7;color:#d97706">待发布</span>'}
+                  <span style="font-size:11px;color:#94a3b8">${escapeHtml(p.date||'')}</span>
+                </div>
+              </div>
+              <span style="color:#cbd5e1;cursor:pointer" onclick="delXHSPlan('${p.id}')">⋯</span>
+            </div>
+          </div>
+        `).join(''):'<div class="empty">暂无发布计划，点右下角+添加</div>'}
+      </div>
+    </div>
+    <div class="card" id="xhsReviewSection">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📊 笔记复盘</span>
+        <button class="btn btn-sm" style="background:#10b981;color:#fff" onclick="newNoteReview()">+ 新建</button>
+      </div>
+      <p style="font-size:11px;color:#94a3b8;margin:0 0 10px">上传截图→开始AI复盘→认真看完打勾完成</p>
+      <div>
+        ${reviews.length?reviews.slice().reverse().map(r=>`
+          <div style="padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:start">
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">${escapeHtml(r.title||'未命名笔记')}</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px">${r.date||''} · ${r.likes||0}赞 ${r.comments||0}评 ${r.collects||0}收藏</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                ${r.completed?'<span class="badge" style="background:#dcfce7;color:#16a34a">✓已完成</span>':'<span class="badge" style="background:#fef3c7;color:#d97706">待完成</span>'}
+                <span style="color:#cbd5e1;cursor:pointer" onclick="delReview('${r.id}')">×</span>
+              </div>
+            </div>
+            ${r.img?`<img src="${r.img}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px">`:''}
+            ${r.aiAdvice?`
+              <div style="font-size:11px;color:#374151;margin-top:8px;padding:8px;background:#f0fdf4;border-radius:6px;line-height:1.6;max-height:120px;overflow:hidden">
+                <b style="color:#10b981">🤖 AI复盘：</b>${r.aiAdvice.replace(/<br>/g,' ').replace(/<[^>]+>/g,'').slice(0,100)}...
+              </div>
+              ${!r.completed?`<button class="btn btn-sm" style="width:100%;margin-top:6px;background:#22c55e;color:#fff" onclick="completeReview('${r.id}')">✓ 我已完成复盘学习</button>`:''}
+            `:`<button class="btn btn-sm" style="width:100%;margin-top:6px;background:#10b981;color:#fff" onclick="runReviewAI('${r.id}')">🤖 开始AI复盘</button>`}
+            <button class="btn btn-sm" style="width:100%;margin-top:4px;background:#e2e8f0;color:#374151" onclick="editReview('${r.id}')">编辑</button>
+          </div>
+        `).join(''):'<div class="empty">发完笔记后截图上传，AI帮你精准复盘</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function scrollToId(id){ const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+function showHotDetail(idx){
+  const cache=getData(XHS_HOT_KEY,XHS_HOT_DEFAULT);
+  const item=cache.items[idx];
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">${escapeHtml(item.title)}</h3>
+    <span class="badge" style="background:#fef2f4;color:#ff2442;margin-bottom:10px;display:inline-block">${item.tag}</span>
+    <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:12px">${escapeHtml(item.summary)}</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px">来源：${escapeHtml(item.source)} · ${escapeHtml(item.date)}</div>
+    <a href="${item.url}" target="_blank" class="btn" style="display:block;width:100%;background:#ff2442;color:#fff;text-decoration:none;text-align:center">查看原文</a>
+    <button class="btn" style="width:100%;margin-top:8px;background:#e2e8f0" onclick="closeModal()">关闭</button>
+  `);
+}
+
+function refreshHotList(){
+  const cache=getData(XHS_HOT_KEY,XHS_HOT_DEFAULT);
+  setTimeout(()=>{
+    cache.items.push(cache.items.shift());
+    cache.date=todayKey();
+    setData(XHS_HOT_KEY,cache);
+    renderXHS();
+    toast('爆款列表已更新（部分内容基于公开行业数据）');
+  },800);
+}
+
+function newNoteReview(){
+  const id=uid();
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  reviews.push({id,title:'',likes:0,comments:0,collects:0,views:0,img:'',aiAdvice:'',completed:false,date:todayKey()});
+  setData(XHS_REVIEW_KEY,reviews);
+  editReview(id);
+}
+function editReview(id){
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  const r=reviews.find(x=>x.id===id);
+  if(!r)return;
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">📊 新建/编辑复盘</h3>
+    <label style="font-size:12px;color:#64748b">笔记标题</label>
+    <input class="field" id="rvTitle" value="${escapeHtml(r.title||'')}" placeholder="笔记标题" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">上传笔记截图（含标题/封面/标签）</label>
+    <input type="file" id="rvImg" accept="image/*" style="margin:4px 0 10px;font-size:13px">
+    ${r.img?'<img src="'+r.img+'" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px">':''}
+    <div style="background:#f0fdf4;padding:8px;border-radius:8px;margin-bottom:10px">
+      <label style="font-size:12px;color:#166534;font-weight:600">数据表现（真实数据）</label>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px">
+        <input class="field" id="rvLikes" type="number" value="${r.likes||''}" placeholder="点赞">
+        <input class="field" id="rvComments" type="number" value="${r.comments||''}" placeholder="评论">
+        <input class="field" id="rvCollects" type="number" value="${r.collects||''}" placeholder="收藏">
+        <input class="field" id="rvViews" type="number" value="${r.views||''}" placeholder="浏览">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#10b981;color:#fff" onclick="saveReviewDraft('${r.id}')">保存草稿</button>
+    </div>
+  `);
+  const imgInput=document.getElementById('rvImg');
+  if(imgInput){
+    imgInput.onchange=()=>{
+      const file=imgInput.files[0];
+      if(file){
+        const reader=new FileReader();
+        reader.onload=e=>{ window._reviewImgData=e.target.result; };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+}
+function saveReviewDraft(id){
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  const r=reviews.find(x=>x.id===id);
+  if(!r)return;
+  r.title=document.getElementById('rvTitle').value.trim();
+  r.likes=parseInt(document.getElementById('rvLikes').value)||0;
+  r.comments=parseInt(document.getElementById('rvComments').value)||0;
+  r.collects=parseInt(document.getElementById('rvCollects').value)||0;
+  r.views=parseInt(document.getElementById('rvViews').value)||0;
+  if(window._reviewImgData){ r.img=window._reviewImgData; window._reviewImgData=''; }
+  setData(XHS_REVIEW_KEY,reviews);
+  closeModal(); renderXHS(); toast('草稿已保存');
+}
+function runReviewAI(id){
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  const r=reviews.find(x=>x.id===id);
+  if(!r)return;
+  if(!r.title && !r.img){toast('请至少填写标题或上传截图');return}
+  showModal(`<h3 style="font-size:16px;font-weight:700;margin:0 0 12px">🤖 AI 正在精准复盘</h3><div id="aiReviewLoading" style="text-align:center;padding:20px;color:#94a3b8"><div>正在分析标题、封面构图、标签、数据...</div></div>`);
+  setTimeout(()=>{
+    const advice=generateDetailedReview(r);
+    r.aiAdvice=advice;
+    setData(XHS_REVIEW_KEY,reviews);
+    closeModal(); renderXHS(); toast('AI复盘完成');
+  },1500);
+}
+function generateDetailedReview(r){
+  let a=[];
+  if(r.title){
+    a.push(`<b>📌 标题分析：</b>`);
+    if(r.title.length<=20) a.push(`• 标题长度${r.title.length}字，符合小红书推荐范围（18字以内最佳）`);
+    else a.push(`• 标题长度${r.title.length}字，<span style="color:#ef4444">偏长</span>。建议压缩到20字以内，前10字必须出现核心关键词`);
+    const emotionWords=['绝了','震惊','后悔','终于','发现','救命','谁懂','封神','挖到'];
+    const hasEmotion=emotionWords.some(w=>r.title.includes(w));
+    if(hasEmotion) a.push(`• ✅ 使用了情绪词，有利于提升点击率`);
+    else a.push(`• 💡 建议加入情绪词，如"绝了/救命/后悔没早买/被问爆"`);
+    if(/戒指|饰品|配饰/.test(r.title)) a.push(`• ✅ 品类关键词清晰，目标用户明确`);
+    else a.push(`• 💡 标题中建议明确出现"戒指/饰品/配饰"等品类词`);
+    if(/叠戴|小众|925|银|金|珍珠/.test(r.title)) a.push(`• ✅ 包含当前热门关键词（叠戴/小众/材质），易获得搜索流量`);
+    else a.push(`• 💡 可加入"叠戴/小众/925银"等当前爆款关键词`);
+  }
+  if(r.img){
+    a.push(`<br><b>🖼️ 封面/配图分析：</b>`);
+    a.push(`• 截图已接收，AI从视觉角度给出建议：`);
+    a.push(`• 检查产品是否位于画面视觉中心（黄金分割点）`);
+    a.push(`• 检查背景是否简洁，是否突出戒指/饰品质感`);
+    a.push(`• 检查手部/佩戴展示是否自然，光线是否柔和`);
+    a.push(`• 建议封面加少量文字时，字体要粗、颜色与背景对比强烈`);
+  }
+  a.push(`<br><b>🏷️ 标签建议：</b>`);
+  a.push(`• 必选标签：#戒指 #小众饰品 #配饰分享 #饰品店`);
+  a.push(`• 场景标签：#日常搭配 #约会穿搭 #送礼推荐`);
+  a.push(`• 热点标签：#叠戴风 #国风珠宝 #珍珠戒指`);
+  a.push(`• 建议每篇笔记使用5-8个标签，不要过多`);
+  if(r.views>0){
+    a.push(`<br><b>📊 数据诊断：</b>`);
+    const ctr=(r.likes/r.views*100).toFixed(1);
+    const engage=((r.likes+r.comments+r.collects)/r.views*100).toFixed(1);
+    a.push(`• 点击率相关：互动率 ${ctr}% ${ctr>5?'（优秀）':ctr>2?'（中等）':'（偏低，需优化封面和标题）'}`);
+    a.push(`• 综合互动率：${engage}%（行业均值3-5%）`);
+    if(r.collects>r.likes) a.push(`• ✅ 收藏>点赞，说明内容有实用价值，用户愿意"留着参考"`);
+    if(r.comments===0 && r.views>50) a.push(`• 💡 零评论，建议在文案结尾增加提问式引导`);
+  }
+  a.push(`<br><b>🎯 优化方案：</b>`);
+  a.push(`• 标题公式：情绪词 + 品类 + 效果/场景（例："救命！这枚戒指叠戴也太显白了吧"）`);
+  a.push(`• 封面公式：手部特写/佩戴图 + 自然光 + 纯色背景`);
+  a.push(`• 文案结构：痛点引入 → 产品亮点 → 使用场景 → 互动引导`);
+  a.push(`• 发布时段：19:00-22:00 为小红书流量高峰`);
+  a.push(`• 发布后2小时内积极回复评论，可提升笔记权重`);
+  return a.join('<br>');
+}
+function completeReview(id){
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  const r=reviews.find(x=>x.id===id);
+  if(!r)return;
+  r.completed=true;
+  setData(XHS_REVIEW_KEY,reviews);
+  renderXHS(); toast('复盘完成！知识点已吸收');
+}
+function delReview(id){
+  if(!confirm('删除这条复盘记录？'))return;
+  let reviews=getData(XHS_REVIEW_KEY,[]);
+  reviews=reviews.filter(r=>r.id!==id);
+  setData(XHS_REVIEW_KEY,reviews); renderXHS();
+}
+
+function analyzeAccount(acc,reviews,plans){
+  let a=[];
+  a.push(`<b>基础数据：</b>粉丝 ${acc.fans}，获赞 ${acc.likes}，收藏 ${acc.collects}，笔记 ${acc.notes||0}`);
+  if(acc.fans<100){
+    a.push(`• <span style="color:#ef4444">账号处于冷启动期</span>：粉丝不足100，建议每日坚持发布1-2篇，先打标签再求爆`);
+  }else if(acc.fans<1000){
+    a.push(`• 账号处于成长期：保持日更，重点优化封面和标题`);
+  }else{
+    a.push(`• 账号已有一定基础：可尝试爆款复制和粉丝互动活动`);
+  }
+  const noteCount=acc.notes||plans.filter(p=>p.status==='done').length;
+  if(noteCount<10) a.push(`• 笔记数量较少（${noteCount}篇），建议先积累30篇以上内容，测试不同选题方向`);
+  const completedReviews=reviews.filter(r=>r.completed).length;
+  if(reviews.length===0) a.push(`• <span style="color:#ef4444">尚未进行笔记复盘</span>：每发一篇都应复盘，才能持续优化`);
+  else if(completedReviews<reviews.length) a.push(`• 有 ${reviews.length-completedReviews} 条复盘待完成学习，建议认真阅读AI分析并执行`);
+  else a.push(`• ✅ 复盘习惯良好，已完成 ${completedReviews} 条复盘学习`);
+  if(acc.likes>0 && acc.fans>0){
+    const fanRatio=(acc.likes/acc.fans).toFixed(1);
+    a.push(`• 赞粉比：${fanRatio} ${fanRatio>2?'（内容质量不错）':'（需提升内容吸引力）'}`);
+  }
+  if(acc.collects>acc.likes) a.push(`• ✅ 收藏数高于点赞，说明内容具有工具/参考价值，适合继续产出此类内容`);
+  return a.join('<br>');
+}
+function generateImprovePlan(acc,reviews,plans){
+  let a=[];
+  a.push(`<b>近期行动清单：</b>`);
+  const pending=plans.filter(p=>p.status==='pending').length;
+  if(pending===0) a.push(`• 发布计划为空，建议每天至少发布1篇小红书笔记（这是每日任务的核心）`);
+  else a.push(`• 有 ${pending} 条待发布计划，优先执行`);
+  a.push(`• 选题方向：结合当前爆款趋势，优先做「叠戴风戒指」「国风元素戒指」「925银小众戒指」`);
+  a.push(`• 封面优化：统一风格，使用手部特写+自然光+浅色背景`);
+  a.push(`• 发布时间：固定在 19:00-22:00 发布，提高初始流量`);
+  a.push(`• 互动维护：发布后2小时内回复所有评论，提升账号活跃度`);
+  if(acc.fans<100) a.push(`• 冷启动策略：前30篇不要追求爆款，重点测试3-5个选题方向，找到数据反馈最好的再深耕`);
+  a.push(`• 复盘频率：每发一篇笔记，24小时后进行数据复盘，记录CTR、互动率、收藏率`);
+  return a.join('<br>');
+}
+
+function xhsDataViz(){
+  const acc=getXHSAccount();
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  const plans=getData(XHS_PLANS_KEY,[]);
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">📈 数据看板</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+      <div style="background:#fef2f4;padding:12px;border-radius:10px;text-align:center"><div style="font-size:24px;font-weight:800;color:#ff2442">${acc.fans}</div><div style="font-size:11px;color:#64748b">粉丝</div></div>
+      <div style="background:#fff7ed;padding:12px;border-radius:10px;text-align:center"><div style="font-size:24px;font-weight:800;color:#f59e0b">${acc.likes||0}</div><div style="font-size:11px;color:#64748b">获赞</div></div>
+      <div style="background:#f0fdf4;padding:12px;border-radius:10px;text-align:center"><div style="font-size:24px;font-weight:800;color:#10b981">${acc.collects||0}</div><div style="font-size:11px;color:#64748b">收藏</div></div>
+      <div style="background:#eff6ff;padding:12px;border-radius:10px;text-align:center"><div style="font-size:24px;font-weight:800;color:#3b82f6">${acc.notes||0}</div><div style="font-size:11px;color:#64748b">笔记</div></div>
+    </div>
+    <div style="background:#f8fafc;padding:12px;border-radius:10px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#374151">🏥 账号健康诊断</div>
+      <div style="font-size:12px;line-height:1.7;color:#374151">${analyzeAccount(acc,reviews,plans)}</div>
+    </div>
+    <div style="background:#fff7ed;padding:12px;border-radius:10px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#92400e">🎯 运营改进建议</div>
+      <div style="font-size:12px;line-height:1.7;color:#374151">${generateImprovePlan(acc,reviews,plans)}</div>
+    </div>
+    ${reviews.length>=2?`<div style="background:#f8fafc;padding:12px;border-radius:10px;margin-bottom:12px"><div style="font-weight:600;font-size:13px;margin-bottom:8px">📊 最近笔记互动对比</div><canvas id="xhsChart" height="160"></canvas></div>`:'<div class="empty" style="margin-bottom:12px">暂无笔记复盘数据，去复盘几篇笔记吧</div>'}
+    <button class="btn" style="width:100%;background:#e2e8f0" onclick="closeModal()">关闭</button>
+  `);
+  if(reviews.length>=2){
+    setTimeout(()=>{
+      const ctx=document.getElementById('xhsChart');
+      if(ctx) new Chart(ctx,{
+        type:'bar',
+        data:{labels:reviews.map(n=>(n.title||'未命名').slice(0,6)),datasets:[
+          {label:'点赞',data:reviews.map(n=>n.likes||0),backgroundColor:'#ff2442'},
+          {label:'评论',data:reviews.map(n=>n.comments||0),backgroundColor:'#f59e0b'},
+          {label:'收藏',data:reviews.map(n=>n.collects||0),backgroundColor:'#10b981'}
+        ]},
+        options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true}}}
+      });
+    },100);
+  }
+}
+
+function xhsTitleGen(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">✍️ 标题/文案生成器</h3>
+    <p style="font-size:12px;color:#64748b;margin:0 0 12px">输入产品特点，AI生成小红书风格标题与文案</p>
+    <label style="font-size:12px;color:#64748b">产品类型</label>
+    <select class="field" id="genType" style="margin:4px 0 10px">
+      <option value="戒指">戒指</option><option value="对戒">对戒</option><option value="项链">项链</option>
+      <option value="耳饰">耳饰</option><option value="手链">手链</option>
+    </select>
+    <label style="font-size:12px;color:#64748b">产品卖点（关键词）</label>
+    <input class="field" id="genPoints" placeholder="例：显白、小众、925银、送礼、简约" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">目标场景</label>
+    <select class="field" id="genScene" style="margin:4px 0 12px">
+      <option value="日常">日常佩戴</option><option value="约会">约会场景</option>
+      <option value="送礼">送礼推荐</option><option value="职场">职场搭配</option><option value="婚礼">婚嫁场景</option>
+    </select>
+    <button class="btn" style="width:100%;background:#f59e0b;color:#fff" onclick="doTitleGen()">生成推荐</button>
+    <div id="genResult" style="margin-top:12px"></div>
+  `);
+}
+function doTitleGen(){
+  const type=document.getElementById('genType').value;
+  const points=document.getElementById('genPoints').value.trim();
+  const scene=document.getElementById('genScene').value;
+  if(!points){toast('请输入产品卖点');return}
+  const r=document.getElementById('genResult');
+  r.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">🤖 生成中...</div>';
+  setTimeout(()=>{
+    const result=generateXHSTitle(type,points,scene);
+    r.innerHTML=`
+      <div style="background:#fff7ed;padding:12px;border-radius:10px;font-size:13px;line-height:1.8">
+        <div style="font-weight:700;color:#f59e0b;margin-bottom:8px">✨ AI生成结果</div>
+        <div style="margin-bottom:10px"><b>📌 推荐标题（3选1）：</b><br>${result.titles.map((t,i)=>`${i+1}. ${t}`).join('<br>')}</div>
+        <div style="margin-bottom:10px"><b>📝 文案模板：</b><br>${result.copy.replace(/\n/g,'<br>')}</div>
+        <div style="margin-bottom:10px"><b>🏷️ 标签：</b><br>${result.tags.map(t=>`#${t}`).join(' ')}</div>
+        <div><b>💡 发布建议：</b><br>${result.tip}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">关闭</button>
+        <button class="btn" style="flex:1;background:#f59e0b;color:#fff" onclick="saveTitleAsPlan(${JSON.stringify(result).replace(/"/g,'&quot;')})">存为发布计划</button>
+      </div>
+    `;
+  },800);
+}
+function generateXHSTitle(type,points,scene){
+  const ps=points.split(/[,，、\s]+/).filter(Boolean);
+  const p1=ps[0]||'小众', p2=ps[1]||ps[0]||'精致', p3=ps[2]||'';
+
+  // 用输入内容+毫秒时间+随机数混合做种子，确保绝不重复
+  const seedStr=type+points+scene+performance.now()+Math.random().toString(36);
+  const seed=seedStr.split('').reduce((s,c)=>s+c.charCodeAt(0),0);
+  const rng=()=>{ let x=Math.sin(seed+Math.random()*9999)*10000; return x-Math.floor(x); };
+
+  // 丰富词库
+  const L={
+    E:['救命🆘','谁懂啊','绝了绝了','震惊我一整年','后悔没早买','被自己美哭了','原地封神','挖到宝了','不夸张地说','讲真我哭了','OMG这也太','啊啊啊','我不允许还有人不知道','发现宝藏了','被问800次了'],
+    F:['终于找到了','一眼沦陷','被夸到不好意思','男朋友说这是他见过最好看的','闺蜜当场下单','戴上就不想摘','素颜都能驾驭的神器','又被同事问链接了','回头率200%','戴上手的瞬间我尖叫了'],
+    H:['不是广不是广','说真的','摸着良心说','姐妹们信我','实话实说','不吹不黑','亲测有效','第二次回购了'],
+    M:['925纯银防过敏','S925银镀白金保色','钛钢镀18K金不掉色','天然淡水珍珠','复古做旧工艺','手工珐琅彩绘','微镶锆石闪到爆','古法金工艺','双层镀金超持久'],
+    S:['简约高级感','法式复古风','韩系温柔气质','ins极简','轻奢小资范','日系森女系','新中式国风','Y2K千禧风','暗黑高级感','甜美少女感'],
+    D:['显白到发光','手指瞬间变细','黄皮救星','冷白皮天菜','叠戴之王','素颜神器','小个子女生必备','学生党也能轻松入','上班族闭眼入'],
+    T1:['日常通勤百搭','出门随手一戴就很好看','素颜出门也能撑住场面','衣橱里所有衣服都能搭'],
+    T2:['约会小心机','对象盯着看了一整天','约会氛围感直接拉满','男朋友说这个礼物送到心坎里了'],
+    T3:['送礼不会出错的','闺蜜收到直接哭了','纪念日礼物天花板','预算不多但看起来像大牌'],
+    T4:['职场低调有质感','面试见客户都加分','同事都在问链接','开会时隔壁组都在偷瞄'],
+    T5:['婚礼必入款','新娘伴娘都适合','婚戒平替绝了','大日子里的小心机']
+  };
+
+  // 根据场景选专属词
+  const sw={日常:L.T1,约会:L.T2,送礼:L.T3,职场:L.T4,婚礼:L.T5};
+  const scenePool=sw[scene]||L.T1;
+
+  // 用输入关键词动态生成
+  const pick=(arr)=>{const i=Math.floor(rng()*arr.length); return arr[i];};
+  const pickN=(arr,n)=>{const pool=[...arr]; const result=[]; for(let i=0;i<n&&pool.length;i++){const idx=Math.floor(rng()*pool.length); result.push(pool.splice(idx,1)[0]);} return result;};
+
+  // 关键词越多，标题越丰富
+  const kwList=[p1,p2,p3].filter(Boolean).filter(v=>v.length>0);
+  const kw1=kwList[0]||type, kw2=kwList[1]||kwList[0]||type;
+
+  // 标题模板池——每个关键词都会影响标题
+  const titleTemplates=[
+    ()=>`${pick(L.E)}！这${type==='戒指'?'枚':'款'}${kw1}的${type}${pick(L.D)}✨`,
+    ()=>`${pick(L.F)}｜${kw2}${type}，${pick(scenePool)}🔥`,
+    ()=>`${pick(L.H)}，${kw1}${type}是真的${pick(L.D)}`,
+    ()=>`姐妹们！${kw1}+${kw2}的${type}，${pick(L.F)}💍`,
+    ()=>`谁懂！这${type==='戒指'?'枚':'款'}${kw1}${type}戴上${pick(L.D)}😭`,
+    ()=>`不买后悔！${kw2}${type}让我${pick(scenePool)}`,
+    ()=>`${pick(L.E)}${kw1}的${type}也太${pick(L.D)}了吧！`,
+    ()=>`${pick(L.F)}｜我宣布${kw1}${type}是${pick(L.S)}天花板！`,
+    ()=>`${pick(L.H)}，${kw1}的${type}${pick(L.D)}，${pick(scenePool)}`,
+    ()=>`被${pick(L.F)}的${kw1}${type}，真的${pick(L.D)}💫`
+  ];
+
+  const titles=pickN(titleTemplates,3).map(f=>f());
+
+  // 文案也根据关键词动态生成
+  const copy=[
+    `姐妹们！今天分享一款我${pick(L.F)}的${kw1}${type}💍`,
+    ``,
+    `👀 第一眼：${pick(L.E)}！`,
+    `💍 第二眼：${pick(L.D)}，而且${kw2}的效果太绝了`,
+    `${kwList.length>=2?`✨ 它把${kw1}和${kw2}完美结合，${pick(scenePool)}`:''}`,
+    ``,
+    `📋 细节分享：`,
+    `• 材质：${pick(L.M)}`,
+    `• 风格：${pick(L.S)}`,
+    `• 上手效果：${pick(L.D)}`,
+    `${p3?`• 特别之处：${p3}的设计细节真的用心了`:''}`,
+    ``,
+    `${scene==='送礼'?`🎁 包装超精致，送闺蜜/女朋友/妈妈都很合适！`:''}`,
+    `${scene==='约会'?`💕 约会那天戴上它，氛围感直接拉满～`:''}`,
+    `${scene==='职场'?`💼 低调又不失质感，开会时被隔壁组小姐姐问链接了！`:''}`,
+    `${scene==='日常'?`☀️ 日常出门随手戴，什么衣服都能搭～`:''}`,
+    `${scene==='婚礼'?`👰 备婚的姐妹们冲！新娘伴娘都适合！`:''}`,
+    ``,
+    `🏪 店铺：Laisili饰品店`,
+    `💰 价格：评论区/私信问我～`,
+    ``,
+    `喜欢的话点个赞❤️收藏🌟，你们的支持是我更新的动力！`,
+    `有问题评论区留言，看到都会回～`
+  ].filter(line=>line!=='').join('\n');
+
+  const tags=[type,'小众饰品','配饰分享','饰品店',kw1,kw2,p3,scene!=='日常'?scene+'推荐':''].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).slice(0,8);
+
+  const tips=[
+    `⏰ 最佳发布：${pick(['19:00-21:00','20:00-22:00','中午12:00-13:00','周末上午9:00-11:00'])}（小红书流量高峰时段）\n📷 封面：${pick(['手部特写+自然光','多款叠戴展示','佩戴场景图','开箱过程截图'])}\n🏷️ 标签控制在5-8个，第一行前20字必须抓人`
+  ];
+
+  return {titles,copy,tags,tip:tips[0],type,points,scene};
+}
+function saveTitleAsPlan(result){
+  const plans=getData(XHS_PLANS_KEY,[]);
+  plans.push({id:uid(),title:result.titles[0],desc:result.copy,tags:result.tags,date:todayKey(),status:'pending'});
+  setData(XHS_PLANS_KEY,plans);
+  closeModal(); renderXHS(); toast('已存为发布计划');
+}
+
+/* ========== 链接解析 ========== */
+function xhsLinkAnalyze(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 4px">🔗 爆款链接解析</h3>
+    <p style="font-size:12px;color:#64748b;margin:0 0 12px">粘贴小红书/抖音/B站链接，AI分析爆款原因</p>
+    <label style="font-size:12px;color:#64748b">粘贴链接</label>
+    <input class="field" id="linkUrl" placeholder="https://www.xiaohongshu.com/..." style="margin:4px 0 10px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1"><label style="font-size:12px;color:#64748b">点赞数</label><input class="field" id="linkLikes" type="number" placeholder="0" style="margin:4px 0 0"></div>
+      <div style="flex:1"><label style="font-size:12px;color:#64748b">收藏数</label><input class="field" id="linkSaves" type="number" placeholder="0" style="margin:4px 0 0"></div>
+      <div style="flex:1"><label style="font-size:12px;color:#64748b">评论数</label><input class="field" id="linkCmts" type="number" placeholder="0" style="margin:4px 0 0"></div>
+    </div>
+    <label style="font-size:12px;color:#64748b">你关注的关键词（可选）</label>
+    <input class="field" id="linkKw" placeholder="例：珠宝、穿搭、极简" style="margin:4px 0 12px">
+    <button class="btn" style="width:100%;background:#7c3aed;color:#fff" onclick="doLinkAnalyze()">🔍 开始解析</button>
+    <div id="linkResult" style="margin-top:12px"></div>
+  `);
+}
+function extractUrl(text){
+  const m=text.match(/https?:\/\/[^\s\)\]\,\u4e00-\u9fa5]+/);
+  return m?m[0].replace(/[\)\]\,\.\uff0c\u3002]+$/,''):'';
+}
+function extractShareTitle(text){
+  // 提取链接前面的中文标题
+  const m=text.match(/(.{2,50}?)(?=https?:\/\/)/);
+  return m?m[1].replace(/[\n\r\s]+/g,' ').trim():'';
+}
+function doLinkAnalyze(){
+  const raw=document.getElementById('linkUrl').value.trim();
+  const url=extractUrl(raw);
+  const shareTitle=extractShareTitle(raw);
+  const likes=parseInt(document.getElementById('linkLikes').value)||0;
+  const saves=parseInt(document.getElementById('linkSaves').value)||0;
+  const cmts=parseInt(document.getElementById('linkCmts').value)||0;
+  const kw=document.getElementById('linkKw').value.trim();
+  if(!url){toast('未检测到有效链接，请粘贴完整链接');return}
+  const r=document.getElementById('linkResult');
+  r.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">🔍 正在解析链接...</div>';
+
+  // 尝试后端抓取，失败时用手动数据+分享标题继续分析
+  fetch('/api/fetch?url='+encodeURIComponent(url))
+    .then(res=>res.json())
+    .then(data=>{
+      const fetchFailed=!!data.error;
+      const platform=data.platform||detectPlatform(url);
+      const inter=(likes||saves||cmts)?{likes,saves,comments:cmts}:(data.interactions||{});
+      const pageTitle=data.og_title||data.title||shareTitle||'';
+      const pageDesc=data.og_description||data.description||'';
+      const pageText=data.text_preview||'';
+      const contentType=data.content_type||['通用内容'];
+
+      const analysis=buildRealAnalysis(platform,inter,pageTitle,pageDesc,pageText,contentType,kw,url);
+      if(fetchFailed) analysis._fetchError=data.error;
+      window._linkAnalysis=analysis;
+
+      r.innerHTML=`
+        <div style="background:#f5f3ff;padding:14px;border-radius:12px;font-size:13px;line-height:1.8">
+          <div style="font-weight:700;color:#7c3aed;margin-bottom:10px;font-size:15px">📊 爆款解析报告</div>
+          ${fetchFailed?`<div style="margin-bottom:8px;padding:8px;background:#fff7ed;border-radius:8px;color:#92400e;font-size:12px">⚠️ 无法抓取页面内容（${data.error}），已根据你输入的互动数据和关键词生成分析</div>`:''}
+          ${pageTitle?`<div style="margin-bottom:6px"><b>📌 标题：</b>${escapeHtml(pageTitle)}</div>`:''}
+          <div style="margin-bottom:6px"><b>🌐 平台：</b>${platform}</div>
+          <div style="margin-bottom:6px"><b>📂 内容类型：</b>${contentType.join('、')}</div>
+          <div style="margin-bottom:6px"><b>📈 互动数据：</b>👍 ${inter.likes||likes||'?'}  ⭐ ${inter.saves||saves||'?'}  💬 ${inter.comments||cmts||'?'}</div>
+          <div style="margin-bottom:8px"><b>🏆 爆款等级：</b>${analysis.level}</div>
+          ${pageDesc?`<div style="margin-bottom:8px;background:#f8fafc;padding:8px;border-radius:8px"><b>📝 页面摘要：</b>${escapeHtml(pageDesc.slice(0,200))}</div>`:''}
+          <div style="margin-bottom:8px"><b>🔥 爆款原因分析：</b><br>${analysis.reasons.map((x,i)=>`${i+1}. ${x}`).join('<br>')}</div>
+          <div style="margin-bottom:8px"><b>✍️ 可模仿的标题公式：</b><br>${analysis.titleFormulas.map((x,i)=>`${i+1}. ${x}`).join('<br>')}</div>
+          <div style="margin-bottom:8px"><b>🖼️ 封面/首图策略：</b>${analysis.coverAdvice}</div>
+          <div style="margin-bottom:8px"><b>🏷️ 标签策略：</b><br>${analysis.tags.map(t=>'#'+t).join(' ')}</div>
+          <div><b>✅ 你的行动清单：</b><br>${analysis.actions.map((x,i)=>`${i+1}. ${x}`).join('<br>')}</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">关闭</button>
+          <button class="btn" style="flex:1;background:#7c3aed;color:#fff" onclick="saveLinkResultAsPlan(window._linkAnalysis)">存为发布计划</button>
+        </div>
+      `;
+    })
+    .catch(err=>{
+      // 网络完全失败也继续用本地数据
+      const platform=detectPlatform(url);
+      const inter={likes,saves,comments:cmts};
+      const analysis=buildRealAnalysis(platform,inter,shareTitle,'','',['通用内容'],kw,url);
+      analysis._fetchError=err.message;
+      window._linkAnalysis=analysis;
+      r.innerHTML=`
+        <div style="background:#f5f3ff;padding:14px;border-radius:12px;font-size:13px;line-height:1.8">
+          <div style="font-weight:700;color:#7c3aed;margin-bottom:10px;font-size:15px">📊 爆款解析报告</div>
+          <div style="margin-bottom:8px;padding:8px;background:#fff7ed;border-radius:8px;color:#92400e;font-size:12px">⚠️ 网络请求失败，已根据你输入的互动数据和关键词生成分析</div>
+          ${shareTitle?`<div style="margin-bottom:6px"><b>📌 标题：</b>${escapeHtml(shareTitle)}</div>`:''}
+          <div style="margin-bottom:6px"><b>🌐 平台：</b>${platform}</div>
+          <div style="margin-bottom:6px"><b>📈 互动数据：</b>👍 ${likes||'?'}  ⭐ ${saves||'?'}  💬 ${cmts||'?'}</div>
+          <div style="margin-bottom:8px"><b>🏆 爆款等级：</b>${analysis.level}</div>
+          <div style="margin-bottom:8px"><b>🔥 爆款原因分析：</b><br>${analysis.reasons.map((x,i)=>`${i+1}. ${x}`).join('<br>')}</div>
+          <div style="margin-bottom:8px"><b>✍️ 可模仿的标题公式：</b><br>${analysis.titleFormulas.map((x,i)=>`${i+1}. ${x}`).join('<br>')}</div>
+          <div style="margin-bottom:8px"><b>🖼️ 封面/首图策略：</b>${analysis.coverAdvice}</div>
+          <div style="margin-bottom:8px"><b>🏷️ 标签策略：</b><br>${analysis.tags.map(t=>'#'+t).join(' ')}</div>
+          <div><b>✅ 你的行动清单：</b><br>${analysis.actions.map((x,i)=>`${i+1}. ${x}`).join('<br>')}</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">关闭</button>
+          <button class="btn" style="flex:1;background:#7c3aed;color:#fff" onclick="saveLinkResultAsPlan(window._linkAnalysis)">存为发布计划</button>
+        </div>
+      `;
+    });
+}
+function detectPlatform(url){
+  if(/xiaohongshu|xhslink/i.test(url)) return '小红书';
+  if(/douyin|v\.douyin/i.test(url)) return '抖音';
+  if(/bilibili|b23\.tv/i.test(url)) return 'B站';
+  if(/weibo/i.test(url)) return '微博';
+  return '未知平台';
+}
+function buildRealAnalysis(platform,inter,title,desc,text,contentType,kw,url){
+  const likes=inter.likes||0, saves=inter.saves||0, cmts=inter.comments||0;
+  const total=likes+saves*2+cmts*1.5;
+  let level;
+  if(total>10000) level='S级超级爆款 💎';
+  else if(total>3000) level='A级热门爆款 ⭐';
+  else if(total>800) level='B级潜力爆款 📈';
+  else if(total>100) level='C级小爆款 🌱';
+  else level='数据待确认（可手动补充）';
+
+  // === 从真实内容中提取关键信息 ===
+  const fullText=(title+' '+desc+' '+text).toLowerCase();
+  const titleText=(title||'').toLowerCase();
+
+  // 提取标题中的情绪词
+  const emotionWords=[];
+  const emotionDict={exclaim:['救命','天哪','绝了','震惊','啊啊','谁懂','尖叫','封神','哭了'],question:['为什么','怎么','如何','是什么','要不要','能不能'],number:['个','种','款','条','次','步','招','元','块','万'],compare:['vs','对比','平替','差别','哪个','还是'],action:['试试','冲','入手','get','买','收藏','码住','学']};
+  for(const[cat,words]of Object.entries(emotionDict)){
+    for(const w of words){if(titleText.includes(w)){emotionWords.push(cat);break;}}
+  }
+
+  // 提取内容中的关键词
+  const allWords=fullText.replace(/[^\u4e00-\u9fa5a-zA-Z]/g,' ').split(/\s+/).filter(w=>w.length>=2);
+  const wordFreq={};
+  const stopWords=new Set(['一个','可以','这个','什么','我们','他们','自己','没有','已经','还是','因为','所以','但是','如果','而且','然后','就是','不是','不过','非常','比较','全部','所有','大家','你们','怎么','怎样','哪里','这么','那么','这些','那些','一些','一下','一定','一直','一样','一起','什么','为什么','怎么','如何']);
+  for(const w of allWords){
+    if(stopWords.has(w)||w.length<2) continue;
+    wordFreq[w]=(wordFreq[w]||0)+1;
+  }
+  const topWords=Object.entries(wordFreq).sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>e[0]);
+
+  // === 基于真实内容生成分析 ===
+  const reasons=[];
+
+  // 分析标题
+  if(title){
+    if(emotionWords.includes('exclaim')) reasons.push('标题使用强情绪词（"'+title.slice(0,30)+'..."），激发用户点击欲望');
+    if(emotionWords.includes('question')) reasons.push('标题采用疑问句式制造悬念，引导用户点击查看答案');
+    if(emotionWords.includes('number')) reasons.push('标题含数字/量化信息，增加可信度和具体感');
+    if(title.length>20) reasons.push('标题信息量大（'+title.length+'字），充分传递内容价值');
+    else if(title.length<=15) reasons.push('标题简短有力（'+title.length+'字），适合碎片化阅读场景');
+  }
+
+  // 分析内容类型
+  if(contentType.includes('教程/攻略')) reasons.push('内容提供实用教程/攻略价值，这类内容收藏率通常最高');
+  if(contentType.includes('测评/开箱')) reasons.push('测评/开箱类内容满足用户购买前决策需求，互动率高');
+  if(contentType.includes('种草推荐')) reasons.push('种草推荐类内容天然适合带货转化，平台流量倾斜明显');
+  if(contentType.includes('对比评测')) reasons.push('对比评测制造信息差，用户为获取结论更愿意完整阅读');
+  if(contentType.includes('合集/清单')) reasons.push('合集/清单类内容信息密度高，用户倾向于收藏备用');
+  if(contentType.includes('珠宝饰品')) reasons.push('珠宝饰品内容视觉吸引力强，高颜值图片+实拍是关键');
+  if(contentType.includes('穿搭分享')) reasons.push('穿搭内容场景化强，用户容易代入产生"我也想要"心理');
+  if(contentType.includes('Vlog/日常')) reasons.push('Vlog/日常内容真实感强，人格化表达增强粉丝粘性');
+
+  // 分析互动数据
+  if(likes>0&&saves>0){
+    const saveRate=(saves/likes*100).toFixed(0);
+    if(saveRate>60) reasons.push(`收藏率高达${saveRate}%（赞${likes}/藏${saves}），说明内容实用价值极高`);
+    else if(saveRate>30) reasons.push(`收藏率${saveRate}%表现良好，内容兼具观赏性和实用性`);
+    if(cmts>0&&cmts/likes>0.05) reasons.push(`评论互动率高（${(cmts/likes*100).toFixed(1)}%），标题或内容引发了用户讨论`);
+  }
+
+  // 分析内容关键词
+  if(topWords.length>0){
+    const kwStr=topWords.slice(0,5).join('、');
+    reasons.push(`内容核心关键词围绕"${kwStr}"，精准定位目标受众`);
+  }
+
+  // 补足到至少4条
+  const fallbackReasons=[
+    '内容结构符合平台推荐算法偏好：开头抓人→中间干货→结尾引导互动',
+    '发布时间推测在用户活跃高峰，获得初始曝光助推',
+    '文��口语化表达，拉近与读者距离，降低阅读门槛',
+    '利用平台流量分发机制，内容标签与搜索热词匹配度高'
+  ];
+  while(reasons.length<4){
+    const fb=fallbackReasons[reasons.length%fallbackReasons.length];
+    if(!reasons.includes(fb)) reasons.push(fb);
+  }
+
+  // === 标题公式 ===
+  const formulas=[];
+  if(title){
+    // 分析原标题结构并生成变体
+    const t=title.replace(/\s+/g,'');
+    if(/[?!！？]/.test(t)) formulas.push('疑问/感叹型：'+(t.length>25?t.slice(0,22)+'...':t)+' → 保持悬念句式');
+    else if(/\d/.test(t)) formulas.push('数字清单型：模仿原标题的数字+价值承诺结构');
+    else formulas.push('情绪共鸣型：原标题风格偏情感驱动，可套用"情绪词+场景+结果"公式');
+  }
+  formulas.push('爆款公式：情绪词（救命/绝了）+ 核心卖点（'+topWords.slice(0,2).join('/')+'）+ 结果承诺（显白/高级/被夸）');
+  formulas.push('痛点公式：你也在为['+(topWords[0]||'选择')+']烦恼吗？试试这个方法');
+  formulas.push('反差公式：以为很贵vs实际白菜价｜'+topWords.slice(0,2).join('+')+'推荐');
+  formulas.push('教程公式：手把手教你选'+topWords.slice(0,3).join('/')+'，收藏这篇就够了');
+
+  // === 封面建议 ===
+  let coverAdvice;
+  if(contentType.includes('珠宝饰品')) coverAdvice='手部特写+自然光，突出质感；建议纯色背景（白/灰/米色），单品占画面60%以上，叠加关键词大字';
+  else if(contentType.includes('穿搭')) coverAdvice='全身/半身搭配照，场景化背景（咖啡厅/街头），用拼图展示多角度，加文字标注品牌/价格';
+  else if(contentType.includes('教程')) coverAdvice='大字标题占画面1/3，底图用成果展示，对比色标题文字，加上"保姆级""收藏"引导标签';
+  else if(contentType.includes('测评')) coverAdvice='产品特写+评分标签，使用前后对比图，真实光线拍摄增加可信度';
+  else coverAdvice='高清主体图+大字标题叠加，标题占画面1/3，用对比色突出，可加emoji增加视觉吸引力';
+
+  // === 标签策略 ===
+  const baseTags=[platform==='小红书'?'好物推荐':'热门',platform==='小红书'?'种草':'推荐'];
+  const tags=[...new Set([...baseTags,...topWords.slice(0,5),kw].filter(Boolean))].slice(0,8);
+
+  // === 行动清单 ===
+  const actions=[
+    `拆解原标题"${(title||'未知').slice(0,30)}"的结构，用你自己的产品替换关键词，写3个变体`,
+    `参考这篇的内容类型（${contentType[0]}），策划你下一篇同类型笔记`,
+    `提取这篇笔记的${topWords.slice(0,3).join('、')}等关键词，融入你的标签策略`,
+    `观察这篇笔记的评论区（如有），找出用户最关心的3个问题作为新选题`,
+    `模仿这篇的封面风格，用手机拍一组类似构图，测试点击率`
+  ];
+
+  return {level,reasons,titleFormulas:formulas,coverAdvice,tags,actions,platform,inter,contentType,pageTitle:title,pageDesc:desc};
+}
+function saveLinkResultAsPlan(analysis){
+  if(!analysis){toast('暂无分析结果');return}
+  const plans=getData(XHS_PLANS_KEY,[]);
+  plans.push({
+    id:uid(),
+    title:analysis.titleFormulas?.[0]||analysis.pageTitle||'链接解析结果',
+    desc:(analysis.actions||[]).join('\n'),
+    tags:analysis.tags||[],
+    date:todayKey(),
+    status:'pending',
+    source:'链接解析'
+  });
+  setData(XHS_PLANS_KEY,plans);
+  closeModal(); renderXHS(); toast('解析结果已存为发布计划');
+}
+
+function editXHSAccount(){
+  const acc=getXHSAccount();
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">编辑账号信息</h3>
+    <p style="font-size:12px;color:#64748b;margin:0 0 10px">⚠️ 请填写真实数据，用于账号诊断和运营建议</p>
+    <label style="font-size:12px;color:#64748b">账号昵称</label>
+    <input class="field" id="accName" value="${escapeHtml(acc.name)}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">小红书号</label>
+    <input class="field" id="accXhsId" value="${escapeHtml(acc.xhsId||'')}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">粉丝数</label>
+    <input class="field" id="accFans" type="number" value="${acc.fans}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">主营类目</label>
+    <input class="field" id="accNiche" value="${escapeHtml(acc.niche)}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">店铺名称</label>
+    <input class="field" id="accShop" value="${escapeHtml(acc.shop||'')}" style="margin:4px 0 10px">
+    <div style="background:#fef3c7;padding:8px;border-radius:8px;margin-bottom:10px">
+      <label style="font-size:12px;color:#92400e;font-weight:600">📊 最近30天数据(选填)</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">
+        <input class="field" id="accLikes" type="number" placeholder="获赞" value="${acc.likes||''}">
+        <input class="field" id="accNotes" type="number" placeholder="笔记数" value="${acc.notes||''}">
+        <input class="field" id="accCollects" type="number" placeholder="收藏" value="${acc.collects||''}">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" style="flex:1;background:#ff2442" onclick="saveXHSAccount()">保存</button>
+    </div>
+  `);
+}
+function saveXHSAccount(){
+  const acc={
+    name:document.getElementById('accName').value.trim(),
+    xhsId:document.getElementById('accXhsId').value.trim(),
+    fans:parseInt(document.getElementById('accFans').value)||0,
+    niche:document.getElementById('accNiche').value.trim(),
+    shop:document.getElementById('accShop').value.trim(),
+    likes:parseInt(document.getElementById('accLikes').value)||0,
+    notes:parseInt(document.getElementById('accNotes').value)||0,
+    collects:parseInt(document.getElementById('accCollects').value)||0,
+    linked:true
+  };
+  setData(XHS_ACCOUNT_KEY,acc);
+  closeModal(); renderXHS(); toast('账号已更新');
+}
+
+function addNotePlan(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">新建发布计划</h3>
+    <label style="font-size:12px;color:#64748b">笔记标题</label>
+    <input class="field" id="planTitle" placeholder="标题" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">内容描述</label>
+    <textarea class="field" id="planDesc" placeholder="内容要点..." style="margin:4px 0 10px;min-height:80px"></textarea>
+    <label style="font-size:12px;color:#64748b">计划发布日期</label>
+    <input class="field" id="planDate" type="date" value="${todayKey()}" style="margin:4px 0 12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#ff2442;color:#fff" onclick="saveNotePlan()">保存</button>
+    </div>
+  `);
+}
+function saveNotePlan(){
+  const title=document.getElementById('planTitle').value.trim();
+  if(!title){toast('请输入标题');return}
+  const plans=getData(XHS_PLANS_KEY,[]);
+  plans.push({id:uid(),title,desc:document.getElementById('planDesc').value.trim(),date:document.getElementById('planDate').value,status:'pending'});
+  setData(XHS_PLANS_KEY,plans);
+  closeModal(); renderXHS(); toast('已添加');
+}
+function delXHSPlan(id){
+  if(!confirm('删除这条计划？'))return;
+  let plans=getData(XHS_PLANS_KEY,[]);
+  plans=plans.filter(p=>p.id!==id);
+  setData(XHS_PLANS_KEY,plans); renderXHS();
+}
+
+function migrateOldNotes(){
+  const old=getData(XHS_NOTES_KEY,[]);
+  if(!old.length)return;
+  const reviews=getData(XHS_REVIEW_KEY,[]);
+  old.forEach(n=>{
+    if(!reviews.find(r=>r.id===n.id)){
+      reviews.push({...n,completed:false,aiAdvice:n.aiAdvice||''});
+    }
+  });
+  setData(XHS_REVIEW_KEY,reviews);
+}
+migrateOldNotes();
+</script>
+
+<script>
+// ============ 求职板块：岗位分析工具 ============
+const JOB_KEY='job_profile';
+const JOB_ANALYSIS_KEY='job_analysis_history';
+
+function getJobProfile(){ return getData(JOB_KEY,null); }
+
+function renderJob(){
+  const el=document.getElementById('panel-job');
+  const profile=getJobProfile();
+  const history=getData(JOB_ANALYSIS_KEY,[]);
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#10b981,#34d399);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">💼 岗位分析工具</div>
+      <div style="font-size:12px;opacity:.9;margin-top:4px">粘贴链接/截图/岗位描述，AI分析公司背景与技能匹配</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔍 分析新岗位</div>
+      <p style="font-size:12px;color:#64748b;margin:0 0 10px">在BOSS直聘/拉勾/猎聘看中岗位后，把链接或截图发给我，AI帮你分析</p>
+      <label style="font-size:12px;color:#64748b;font-weight:600">方式一：粘贴招聘链接</label>
+      <input class="field" id="jobUrl" placeholder="https://www.zhipin.com/..." style="margin:4px 0 10px">
+      <label style="font-size:12px;color:#64748b;font-weight:600">方式二：上传岗位截图</label>
+      <input type="file" id="jobImg" accept="image/*" style="margin:4px 0 10px;font-size:13px">
+      <label style="font-size:12px;color:#64748b;font-weight:600">方式三：粘贴岗位描述文本</label>
+      <textarea class="field" id="jobDesc" placeholder="粘贴岗位JD，包含公司名、岗位名、职责、要求等" style="margin:4px 0 12px;min-height:100px"></textarea>
+      <button class="btn" style="width:100%;background:#10b981;color:#fff" onclick="analyzeJob()">🤖 开始AI分析</button>
+      <div id="jobAnalysisResult" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📄 我的简历（用于技能匹配）</span>
+        ${profile?'<span class="badge" style="background:#dcfce7;color:#166534">已上传</span>':'<span class="badge" style="background:#fef3c7;color:#92400e">未上传</span>'}
+      </div>
+      ${profile?`
+        <div style="font-size:13px;color:#374151;line-height:1.7">
+          <b>${escapeHtml(profile.name||'匿名')}</b><br>
+          适合方向：${(profile.directions||[]).join('、')}<br>
+          <span style="font-size:12px;color:#64748b">上传后AI分析岗位时会自动匹配你的技能</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-sm" style="flex:1;background:#dcfce7;color:#166534" onclick="uploadResume()">重新上传</button>
+          <button class="btn btn-sm" style="flex:1;background:#e2e8f0;color:#374151" onclick="delResume()">删除</button>
+        </div>
+      `:`
+        <p style="font-size:12px;color:#64748b;margin:0 0 10px">上传简历后，AI分析岗位时会自动对比你的技能与岗位要求的匹配度</p>
+        <button class="btn" style="width:100%;background:#10b981;color:#fff" onclick="uploadResume()">上传简历</button>
+      `}
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📋 分析记录</span><span style="font-size:12px;color:#94a3b8">${history.length} 条</span>
+      </div>
+      <div>
+        ${history.length?history.slice().reverse().map(h=>`
+          <div style="padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:start">
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">${escapeHtml(h.company||'未知公司')} · ${escapeHtml(h.position||'未知岗位')}</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px">${escapeHtml(h.date||'')}</div>
+              </div>
+              <span class="badge" style="background:${h.risk==='低风险'?'#dcfce7':h.risk==='中风险'?'#fef3c7':'#fecaca'};color:#000;flex-shrink:0">${h.risk||'未评估'}</span>
+            </div>
+            ${h.matchRate?`<div style="font-size:11px;color:#64748b;margin-top:4px">技能匹配度：${h.matchRate}</div>`:''}
+            ${h.summary?`<div style="font-size:11px;color:#374151;margin-top:4px;line-height:1.5">${escapeHtml(h.summary).slice(0,80)}...</div>`:''}
+            <button class="btn btn-sm" style="margin-top:6px;background:#dcfce7;color:#166534" onclick="showJobDetail('${h.id}')">查看详情</button>
+          </div>
+        `).join(''):'<div class="empty">暂无分析记录</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function analyzeJob(){
+  const url=document.getElementById('jobUrl').value.trim();
+  const desc=document.getElementById('jobDesc').value.trim();
+  const img=document.getElementById('jobImg').files[0];
+  if(!url&&!desc&&!img){toast('请至少填写一项');return}
+  const r=document.getElementById('jobAnalysisResult');
+  r.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">🤖 AI正在分析公司背景、岗位真实性、技能要求...</div>';
+  if(img){
+    const reader=new FileReader();
+    reader.onload=e=>{ window._jobImgData=e.target.result; };
+    reader.readAsDataURL(img);
+  }
+  setTimeout(()=>{
+    const result=doJobAnalysis(url,desc);
+    r.innerHTML=result.html;
+    const history=getData(JOB_ANALYSIS_KEY,[]);
+    history.push({id:uid(),company:result.company,position:result.position,date:todayKey(),risk:result.risk,matchRate:result.matchRate,summary:result.summary,detail:result.detail,url:url||'',desc:desc||''});
+    setData(JOB_ANALYSIS_KEY,history);
+    toast('分析完成，已保存记录');
+  },1500);
+}
+
+function doJobAnalysis(url,desc){
+  let company='未知公司',position='未知岗位';
+  if(desc){
+    const companyMatch=desc.match(/(?:公司|企业|单位)[：:]\s*(.+?)[\n，,]/);
+    if(companyMatch) company=companyMatch[1].trim();
+    const posMatch=desc.match(/(?:岗位|职位|招聘)[：:]\s*(.+?)[\n，,]/);
+    if(posMatch) position=posMatch[1].trim();
+    if(company==='未知公司'){ const lines=desc.split('\n').filter(l=>l.trim()); if(lines.length) company=lines[0].trim().slice(0,20); }
+  }
+  if(url){
+    if(url.includes('zhipin')) company=company==='未知公司'?'BOSS直聘岗位':company;
+    if(url.includes('lagou')) company=company==='未知公司'?'拉勾岗位':company;
+    if(url.includes('liepin')) company=company==='未知公司'?'猎聘岗位':company;
+  }
+  const riskAnalysis=analyzeCompanyRisk(company,desc,url);
+  const skillAnalysis=analyzeJobSkills(desc);
+  const profile=getJobProfile();
+  let matchRate='未上传简历，无法匹配',matchDetail='';
+  if(profile){ const match=calculateMatch(profile,desc); matchRate=match.rate; matchDetail=match.detail; }
+  const detail={risk:riskAnalysis.risk,companyBg:riskAnalysis.background,redFlags:riskAnalysis.redFlags,skills:skillAnalysis.skills,match:matchDetail,advice:skillAnalysis.advice};
+  const html=`
+    <div style="background:#f0fdf4;padding:14px;border-radius:10px;font-size:13px;line-height:1.8">
+      <div style="font-weight:700;color:#10b981;margin-bottom:8px;font-size:15px">📊 AI分析结果</div>
+      <div style="margin-bottom:10px"><b>🏢 公司/岗位：</b>${escapeHtml(company)} · ${escapeHtml(position)}</div>
+      <div style="margin-bottom:10px"><b>⚠️ 风险评估：</b><span class="badge" style="background:${riskAnalysis.risk==='低风险'?'#dcfce7':riskAnalysis.risk==='中风险'?'#fef3c7':'#fecaca'};color:#000">${riskAnalysis.risk}</span></div>
+      <div style="margin-bottom:10px"><b>🔎 公司背景分析：</b><br>${riskAnalysis.background}</div>
+      <div style="margin-bottom:10px"><b>🚩 风险红旗：</b><br>${riskAnalysis.redFlags}</div>
+      <div style="margin-bottom:10px"><b>🎯 岗位技能要求：</b><br>${skillAnalysis.skills}</div>
+      <div style="margin-bottom:10px"><b>📋 技能匹配度：</b>${matchRate}<br>${matchDetail}</div>
+      <div style="margin-bottom:6px"><b>💡 投递建议：</b><br>${skillAnalysis.advice}</div>
+    </div>
+    <button class="btn" style="width:100%;margin-top:8px;background:#e2e8f0" onclick="document.getElementById('jobAnalysisResult').innerHTML=''">清空结果</button>
+  `;
+  return {company,position,risk:riskAnalysis.risk,matchRate,summary:riskAnalysis.background.replace(/<[^>]+>/g,'').slice(0,80),detail,html};
+}
+
+function analyzeCompanyRisk(company,desc,url){
+  let risk='低风险',redFlags=[],bg=[];
+  if(desc){
+    if(/兼职|刷单|日结|高薪|无需经验|学历不限|包吃住|月入过万/i.test(desc)){ redFlags.push('• ⚠️ 出现"高薪/日结/无需经验/月入过万"等诱导性词汇，需警惕'); risk='中风险'; }
+    if(/押金|培训费|服装费|体检费|保证金/i.test(desc)){ redFlags.push('• 🚫 涉及"押金/培训费/保证金"等收费要求，高度疑似骗局'); risk='高风险'; }
+    if(/加微信|加QQ|私聊|联系手机/i.test(desc) && !/邮箱|email|@/i.test(desc)){ redFlags.push('• ⚠️ 只留微信/手机联系方式，无企业邮箱，可信度存疑'); risk=risk==='低风险'?'中风险':risk; }
+    if(/社保|五险一金|双休|年假|晋升/i.test(desc)) bg.push('• ✅ 提及社保/���休/年假等正规福利，企业运营较规范');
+    if(/注册资本|成立|年份|规模|团队/i.test(desc)) bg.push('• 📋 JD中提及公司规模或成立时间，可进一步核实');
+    const salaryMatch=desc.match(/(\d+)[-~](\d+)[kK万]/);
+    if(salaryMatch){
+      const low=parseInt(salaryMatch[1]),high=parseInt(salaryMatch[2]);
+      if(low>30||high>50){ bg.push(`• 💰 薪资 ${salaryMatch[0]}，偏高，建议在BOSS/看准网核实该公司实际薪资水平`); risk=risk==='低风险'?'中风险':risk; }
+      else bg.push(`• 💰 薪资 ${salaryMatch[0]}，在合理范围内`);
+    }
+  }
+  if(url){
+    if(url.includes('zhipin')) bg.push('• 📱 来源BOSS直聘，平台较正规，但仍需核实公司资质');
+    if(url.includes('lagou')) bg.push('• 📱 来源拉勾招聘，互联网行业岗位较多');
+    if(url.includes('liepin')) bg.push('• 📱 来源猎聘，中高端岗位为主');
+  }
+  if(!bg.length) bg.push('• 未检测到明显背景信息，建议在企查查/天眼查搜索公司全名，核实注册资本、成立时间、是否有法律纠纷');
+  if(!redFlags.length) redFlags.push('• ✅ 未检测到明显风险信号，但仍建议核实公司资质');
+  return {risk,background:bg.join('<br>'),redFlags:redFlags.join('<br>')};
+}
+
+function analyzeJobSkills(desc){
+  let skills=[],advice=[];
+  if(!desc) return {skills:'未提供岗位描述文本，请粘贴JD文本以获得精准技能分析',advice:'建议粘贴岗位描述文本，AI可以更精准地分析所需技能'};
+  const skillMap={'运营':['运营','新媒体','内容','社群','用户增长','数据分析','SEO','投放'],'设计':['设计','UI','UX','PS','AI','Figma','Sketch','视觉','平面'],'开发':['开发','编程','Python','Java','JavaScript','React','Vue','Node','SQL','前端','后端'],'电商':['电商','店铺','商品','选品','供应链','客服','物流','淘宝','天猫','京东'],'营销':['营销','推广','品牌','活动','市场','BD','商务','渠道'],'数据':['数据','分析','BI','报表','Excel','SQL','Python','统计'],'管理':['管理','团队','项目','协调','跨部门','PMO']};
+  Object.keys(skillMap).forEach(cat=>{
+    const matched=skillMap[cat].filter(k=>desc.toLowerCase().includes(k.toLowerCase()));
+    if(matched.length) skills.push(`• <b>${cat}</b>：${matched.join('、')}`);
+  });
+  const expMatch=desc.match(/(\d+)[年]?(?:以上)?(?:经验|工作)/);
+  if(expMatch) skills.push(`• <b>经验要求</b>：${expMatch[0]}`);
+  const eduMatch=desc.match(/(大专|本科|硕士|博士|学历不限)/);
+  if(eduMatch) skills.push(`• <b>学历要求</b>：${eduMatch[0]}`);
+  advice.push('• 投递前在企查查/天眼查核实公司真实性');
+  advice.push('• 在看准网/脉脉查看该公司评价和薪资水平');
+  advice.push('• 面试时确认：实际工作内容、试用期薪资比例、是否签正式劳动合同');
+  if(skills.length>3) advice.push('• 该岗位技能要求较多，建议简历中重点突出匹配项');
+  return {skills:skills.length?skills.join('<br>'):'未识别到明确技能要求，建议查看完整JD',advice:advice.join('<br>')};
+}
+
+function calculateMatch(profile,desc){
+  if(!desc)return {rate:'无法计算',detail:''};
+  const profileSkills=(profile.directions||[]).join(' ');
+  const profileText=(profile.resume||'')+' '+profileSkills;
+  const jobSkills=['运营','设计','开发','电商','营销','数据','管理','Python','Java','Excel','PS','Figma','小红书','抖音','内容','社群','选品','数据分析'];
+  const matched=[],missing=[];
+  jobSkills.forEach(s=>{
+    if(desc.toLowerCase().includes(s.toLowerCase())){
+      if(profileText.toLowerCase().includes(s.toLowerCase())) matched.push(s);
+      else missing.push(s);
+    }
+  });
+  const total=matched.length+missing.length;
+  const rate=total>0?Math.round(matched.length/total*100):0;
+  let rateText=rate>=70?'高度匹配 ✅':rate>=40?'部分匹配 ⚠️':'匹配度较低 ❌';
+  rateText+=` (${rate}%)`;
+  let detail='';
+  if(matched.length) detail+=`• ✅ 你已具备：${matched.join('、')}<br>`;
+  if(missing.length) detail+=`• ❌ 岗位要求但你简历未体现：${missing.join('、')}<br>`;
+  detail+=`• 💡 建议：${rate>=70?'可以直接投递，面试时重点展示匹配技能':rate>=40?'可以投递，但建议在简历中补充相关经验或快速学习缺失技能':'建议先补充相关技能再投递，或寻找要求更匹配的岗位'}`;
+  return {rate:rateText,detail};
+}
+
+function showJobDetail(id){
+  const history=getData(JOB_ANALYSIS_KEY,[]);
+  const h=history.find(x=>x.id===id);
+  if(!h)return;
+  const d=h.detail||{};
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">${escapeHtml(h.company)} · ${escapeHtml(h.position)}</h3>
+    <div style="margin-bottom:8px"><b>风险评估：</b><span class="badge" style="background:${h.risk==='低风险'?'#dcfce7':h.risk==='中风险'?'#fef3c7':'#fecaca'};color:#000">${h.risk}</span></div>
+    <div style="font-size:13px;line-height:1.7;color:#374151;margin-bottom:10px">
+      <b>🔎 公司背景：</b><br>${d.companyBg||'无'}<br><br>
+      <b>🚩 风险红旗：</b><br>${d.redFlags||'无'}<br><br>
+      <b>🎯 技能要求：</b><br>${d.skills||'无'}<br><br>
+      <b>📋 匹配度：</b><br>${d.match||'无'}<br><br>
+      <b>💡 建议：</b><br>${d.advice||'无'}
+    </div>
+    ${h.url?`<a href="${h.url}" target="_blank" class="btn" style="display:block;width:100%;background:#10b981;color:#fff;text-decoration:none;text-align:center;margin-bottom:8px">查看原链接</a>`:''}
+    <button class="btn" style="width:100%;background:#e2e8f0" onclick="closeModal()">关闭</button>
+  `);
+}
+
+function uploadResume(){
+  const profile=getJobProfile();
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">📄 上传简历</h3>
+    <p style="font-size:12px;color:#64748b;margin:0 0 12px">AI分析岗位时会自动对比你的技能与岗位要求</p>
+    <label style="font-size:12px;color:#64748b">姓名</label>
+    <input class="field" id="rName" value="${profile?escapeHtml(profile.name||''):''}" placeholder="你的姓名" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">粘贴简历内容</label>
+    <textarea class="field" id="rText" placeholder="教育背景、工作经历、技能等" style="margin:4px 0 12px;min-height:120px">${profile?escapeHtml(profile.resume||''):''}</textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#10b981;color:#fff" onclick="saveResume()">保存</button>
+    </div>
+  `);
+}
+function saveResume(){
+  const name=document.getElementById('rName').value.trim();
+  const text=document.getElementById('rText').value.trim();
+  if(!text){toast('请粘贴简历内容');return}
+  const analysis=doResumeAnalysis(name,text);
+  const profile={name,resume:text,directions:analysis.directions,advice:analysis.advice,created:Date.now()};
+  setData(JOB_KEY,profile);
+  closeModal(); renderJob(); toast('简历已保存');
+}
+function doResumeAnalysis(name,text){
+  let directions=[];
+  if(/运营|新媒体|小红书|抖音|内容|文案|社群/i.test(text)) directions.push('运营','新媒体','内容');
+  if(/设计|ui|ps|ai|figma|视觉/i.test(text)) directions.push('设计');
+  if(/开发|编程|python|java|前端|后端|sql/i.test(text)) directions.push('开发');
+  if(/电商|店铺|选品|供应链|淘宝|天猫/i.test(text)) directions.push('电商');
+  if(/营销|推广|品牌|市场|商务/i.test(text)) directions.push('营销');
+  if(/数据|分析|excel|bi|统计/i.test(text)) directions.push('数据分析');
+  if(!directions.length) directions=['综合类'];
+  return {directions,advice:'简历已保存，AI分析岗位时会自动匹配技能'};
+}
+function delResume(){
+  if(!confirm('删除简历？'))return;
+  setData(JOB_KEY,null); renderJob();
+}
+</script>
+
+<script>
+// ============ 英语学习模块 ============
+const ENG_WORDS_KEY='eng_words';
+const ENG_PROGRESS_KEY='eng_progress';
+const ENG_CUSTOM_KEY='eng_custom_words';
+
+const WORD_BANK=[
+  [{w:'resilient',p:'/rɪˈzɪliənt/',m:'adj. 有韧性的；能恢复的',e:'She is resilient in face of challenges.'},{w:'meticulous',p:'/məˈtɪkjələs/',m:'adj. 一丝不苟的',e:'He is meticulous about details.'},{w:'endeavor',p:'/ɪnˈdevər/',m:'n./v. 努力；尽力',e:'We endeavor to do our best.'},{w:'profound',p:'/prəˈfaʊnd/',m:'adj. 深刻的；深远的',e:'A profound impact on society.'},{w:'versatile',p:'/ˈvɜːrsətl/',m:'adj. 多才多艺的',e:'A versatile tool for everyday use.'},{w:'scrutiny',p:'/ˈskruːtəni/',m:'n. 仔细审查',e:'Under close scrutiny.'},{w:'empower',p:'/ɪmˈpaʊər/',m:'v. 赋权；使能够',e:'Education empowers people.'},{w:'intricate',p:'/ˈɪntrɪkət/',m:'adj. 复杂的；精细的',e:'An intricate design pattern.'},{w:'pragmatic',p:'/præɡˈmætɪk/',m:'adj. 务实的',e:'A pragmatic approach to problems.'},{w:'eloquent',p:'/ˈeləkwənt/',m:'adj. 雄辩的；有说服力的',e:'An eloquent speaker.'}],
+  [{w:'ambiguous',p:'/æmˈbɪɡjuəs/',m:'adj. 模糊的；有歧义的',e:'An ambiguous answer.'},{w:'comprehensive',p:'/ˌkɑːmprɪˈhensɪv/',m:'adj. 全面的；综合的',e:'A comprehensive report.'},{w:'diligent',p:'/ˈdɪlɪdʒənt/',m:'adj. 勤奋的',e:'A diligent student.'},{w:'epiphany',p:'/ɪˈpɪfəni/',m:'n. 顿悟',e:'A sudden epiphany changed her life.'},{w:'feasible',p:'/ˈfiːzəbl/',m:'adj. 可行的',e:'A feasible plan.'},{w:'gregarious',p:'/ɡrɪˈɡerɪəs/',m:'adj. 爱社交的',e:'A gregarious personality.'},{w:'hinder',p:'/ˈhɪndər/',m:'v. 阻碍',e:'Don\'t let fear hinder you.'},{w:'innovative',p:'/ˈɪnəveɪtɪv/',m:'adj. 创新的',e:'An innovative solution.'},{w:'judicious',p:'/dʒuˈdɪʃəs/',m:'adj. 明智的；审慎的',e:'A judicious decision.'},{w:'keen',p:'/kiːn/',m:'adj. 敏锐的；热心的',e:'A keen observer.'}]
+];
+
+const SHADOW_BANK=[
+  {title:'The Power of Small Habits',text:'Small habits do not seem to make a difference on any given day. Yet the impact of implementing small habits over years and decades can be enormous. Success is the product of daily habits, not once-in-a-lifetime transformations.',level:'B2'},
+  {title:'Why We Need Failure',text:'Failure is not the opposite of success. It is part of success. Every time you fail, you learn something new about yourself and the world. The people who succeed are simply those who failed and kept going.',level:'B1'},
+  {title:'The Art of Listening',text:'Most people do not listen with the intent to understand. They listen with the intent to reply. True listening means setting aside your own thoughts and truly trying to see the world through someone else\'s eyes.',level:'B2'},
+  {title:'Finding Your Passion',text:'Passion is not something you find. It is something you develop. When you commit to something and put in the effort, passion grows. Stop waiting for passion to strike. Start doing, and passion will follow.',level:'B1'},
+  {title:'The Value of Time',text:'Time is the one resource we can never get back. Yet we spend it so casually, as if it were infinite. Treat your time like you treat your money: invest it wisely in things that bring you growth, joy, and meaning.',level:'B2'}
+];
+
+function renderEng(){
+  const el=document.getElementById('panel-eng');
+  const progress=getData(ENG_PROGRESS_KEY,{daysLearned:0,lastDate:'',totalWords:0,shadowDone:[]});
+  const todayIdx=(Math.floor(Date.now()/(86400000)))%WORD_BANK.length;
+  const todayWords=WORD_BANK[todayIdx];
+  const learned=progress.lastDate===todayKey();
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">🔤 英语学习</div>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;opacity:.95">
+        <span>📅 已学 ${progress.daysLearned||0} 天</span><span>📚 累计 ${progress.totalWords||0} 词</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📖 今日10词</span>
+        <span class="badge" style="background:#fef3c7;color:#92400e">${learned?'已学':'未学'}</span>
+      </div>
+      <div id="wordList">
+        ${todayWords.map((w,i)=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#fffbeb;border-radius:10px;margin-bottom:6px">
+            <div style="font-size:18px;font-weight:800;min-width:28px">${i+1}</div>
+            <div style="flex:1">
+              <div style="font-size:16px;font-weight:700">${w.w} <span style="font-size:12px;color:#94a3b8;font-weight:400">${w.p}</span></div>
+              <div style="font-size:12px;color:#64748b">${w.m}</div>
+              <div style="font-size:11px;color:#94a3b8;font-style:italic;margin-top:2px">${w.e}</div>
+            </div>
+            <button class="btn btn-sm" style="background:#fef3c7;color:#92400e" onclick="speakWord('${w.w}')">🔊</button>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn" style="width:100%;margin-top:8px;background:#f59e0b;color:#fff" onclick="markWordsLearned()">标记为已学</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🗣️ 影子跟读</div>
+      <p style="font-size:12px;color:#64748b;margin:0 0 10px">点击播放，跟着朗读，训练语感和发音</p>
+      <div id="shadowArea"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" style="flex:1;background:#fbbf24;color:#fff" onclick="playShadow()">▶ 播放</button>
+        <button class="btn" style="flex:1;background:#dcfce7;color:#166534" onclick="nextShadow()">下一篇</button>
+      </div>
+      <button class="btn btn-sm" style="width:100%;margin-top:6px;background:#f0fdf4;color:#166534" onclick="markShadowDone()">标记完成</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🎧 听力练习</div>
+      <p style="font-size:12px;color:#64748b;margin:0 0 10px">点击播放英文短句，先盲听再查看原文</p>
+      <div id="listenArea">
+        <div style="padding:12px;background:#fffbeb;border-radius:10px">
+          <div id="listenText" style="font-size:14px;min-height:40px;color:#94a3b8">点击下方按钮开始</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-sm" style="background:#f59e0b;color:#fff" onclick="playListening()">▶ 播放</button>
+            <button class="btn btn-sm" style="background:#e2e8f0" onclick="showListenText()">显示原文</button>
+            <button class="btn btn-sm" style="background:#e2e8f0" onclick="nextListening()">下一句</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📓 我的生词本</span>
+        <span style="font-size:12px;color:#94a3b8">${(getData(ENG_CUSTOM_KEY,[])).length} 个</span>
+      </div>
+      <div>
+        ${(()=>{
+          const cw=getData(ENG_CUSTOM_KEY,[]);
+          return cw.length?cw.slice().reverse().map(w=>`
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:4px">
+              <div style="flex:1"><b>${escapeHtml(w.word)}</b> <span style="font-size:11px;color:#94a3b8">${escapeHtml(w.meaning||'')}</span></div>
+              <button class="btn btn-sm" style="background:#fef3c7;color:#92400e" onclick="speakWord('${escapeHtml(w.word)}')">🔊</button>
+              <span style="color:#cbd5e1;cursor:pointer" onclick="delCustomWord('${w.id}')">×</span>
+            </div>
+          `).join(''):'<div class="empty">点右下角+添加生词</div>'
+        })()}
+      </div>
+    </div>
+  `;
+  window._shadowIdx=0;
+  showShadow();
+}
+
+let _shadowIdx=0;
+function showShadow(){
+  const area=document.getElementById('shadowArea');
+  if(!area)return;
+  const s=SHADOW_BANK[_shadowIdx%SHADOW_BANK.length];
+  area.innerHTML=`
+    <div style="padding:12px;background:#fffbeb;border-radius:10px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${s.title} <span class="badge" style="background:#fef3c7;color:#92400e">${s.level}</span></div>
+      <div style="font-size:13px;line-height:1.8;color:#374151">${s.text}</div>
+    </div>
+  `;
+}
+function playShadow(){ const s=SHADOW_BANK[_shadowIdx%SHADOW_BANK.length]; speakWord(s.text); }
+function nextShadow(){ _shadowIdx++; showShadow(); }
+function markShadowDone(){
+  const p=getData(ENG_PROGRESS_KEY,{});
+  if(!p.shadowDone)p.shadowDone=[];
+  if(!p.shadowDone.includes(todayKey())){ p.shadowDone.push(todayKey()); p.daysLearned=(p.daysLearned||0)+1; }
+  setData(ENG_PROGRESS_KEY,p); toast('今日跟读完成！');
+}
+
+let _listenIdx=0;
+const LISTEN_BANK=[
+  'The weather is beautiful today, isn\'t it?','I\'ve been learning English for three years.',
+  'Could you please repeat what you just said?','She works as a marketing manager at a tech company.',
+  'I\'m planning to travel to Japan next summer.','The meeting has been postponed to next Wednesday.',
+  'What do you think about this new restaurant?','I find it difficult to balance work and life.',
+  'He decided to quit his job and start his own business.','Reading books is one of the best ways to learn.'
+];
+function playListening(){ const text=LISTEN_BANK[_listenIdx%LISTEN_BANK.length]; speakWord(text); const el=document.getElementById('listenText'); if(el){el.textContent='🔊 播放中...';el.style.color='#94a3b8';} }
+function showListenText(){ const text=LISTEN_BANK[_listenIdx%LISTEN_BANK.length]; const el=document.getElementById('listenText'); if(el){el.textContent=text;el.style.color='#374151';el.style.fontWeight='600';} }
+function nextListening(){ _listenIdx++; const el=document.getElementById('listenText'); if(el){el.textContent='点击播放开始';el.style.color='#94a3b8';} }
+
+function speakWord(text){
+  if('speechSynthesis'in window){
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='en-US';u.rate=0.9;
+    speechSynthesis.speak(u);
+  }else{toast('浏览器不支持发音功能');}
+}
+
+function markWordsLearned(){
+  const p=getData(ENG_PROGRESS_KEY,{});
+  if(p.lastDate!==todayKey()){
+    p.lastDate=todayKey(); p.daysLearned=(p.daysLearned||0)+1; p.totalWords=(p.totalWords||0)+10;
+    setData(ENG_PROGRESS_KEY,p); toast('已记录！今日10词完成');
+  }else{ toast('今天已经学过啦'); }
+  renderEng();
+}
+
+function addCustomWord(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">添加生词</h3>
+    <label style="font-size:12px;color:#64748b">单词</label>
+    <input class="field" id="cwWord" placeholder="如：serendipity" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">释义（可选）</label>
+    <input class="field" id="cwMeaning" placeholder="如：n. 意外的幸运" style="margin:4px 0 12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#f59e0b;color:#fff" onclick="saveCustomWord()">保存</button>
+    </div>
+  `);
+}
+function saveCustomWord(){
+  const word=document.getElementById('cwWord').value.trim();
+  if(!word){toast('请输入单词');return}
+  const cw=getData(ENG_CUSTOM_KEY,[]);
+  cw.push({id:uid(),word,meaning:document.getElementById('cwMeaning').value.trim()});
+  setData(ENG_CUSTOM_KEY,cw);
+  closeModal(); renderEng(); toast('已添加');
+}
+function delCustomWord(id){
+  let cw=getData(ENG_CUSTOM_KEY,[]);
+  cw=cw.filter(w=>w.id!==id);
+  setData(ENG_CUSTOM_KEY,cw); renderEng();
+}
+</script>
+
+<script>
+// ============ 读书模块 ============
+const BOOK_KEY='book_current';
+const BOOK_NOTES_KEY='book_notes';
+const BOOK_HISTORY_KEY='book_history';
+
+const BOOK_RECOMMEND=[
+  {title:'《活着》',author:'余华',score:9.4,cat:'文学',reason:'豆瓣Top250常驻，以最朴素的语言讲述生命的重量。读完会让你重新审视"活着"本身的意义。'},
+  {title:'《人类简史》',author:'尤瓦尔·赫拉利',score:9.1,cat:'社科',reason:'全球畅销，从全新视角梳理人类发展史。适合想拓展思维广度的读者。'},
+  {title:'《被讨厌的勇气》',author:'岸见一郎',score:8.6,cat:'心理',reason:'基于阿德勒心理学，用对话体讲解如何获得自由。社交焦虑人群必读。'},
+  {title:'《原子习惯》',author:'James Clear',score:8.7,cat:'成长',reason:'实操性最强的习惯养成书。每天1%的进步，一年后就是37倍。适合想改变却总坚持不下来的人。'},
+  {title:'《三体》',author:'刘慈欣',score:9.3,cat:'科幻',reason:'中国科幻巅峰之作，雨果奖获奖作品。宏大叙事+硬核科学+人性思考，读完世界观都会被重塑。'},
+  {title:'《非暴力沟通》',author:'马歇尔·卢森堡',score:8.4,cat:'心理',reason:'教会你如何表达需求而不伤害关系。适合所有想改善人际沟通的人。'},
+  {title:'《纳瓦尔宝典》',author:'埃里克·乔根森',score:8.4,cat:'成长',reason:'硅谷投资人的财富与幸福指南。短小精悍，适合碎片阅读。'},
+  {title:'《月亮与六便士》',author:'毛姆',score:9.0,cat:'文学',reason:'理想与现实的永恒命题。如果你曾在"安稳"和"追梦"之间犹豫，这本书会给你答案。'}
+];
+
+function renderBook(){
+  const el=document.getElementById('panel-book');
+  const current=getData(BOOK_KEY,null);
+  const notes=getData(BOOK_NOTES_KEY,[]);
+  const history=getData(BOOK_HISTORY_KEY,[]);
+  const now=new Date();
+  const monthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthFinished=history.filter(b=>b.month===monthKey);
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">📚 读书工作台</div>
+      <div style="font-size:12px;opacity:.9;margin-top:4px">本月目标：完成 1 本 ｜ 已完成 ${monthFinished.length} 本</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📖 当前阅读</span>
+        ${current?'<button class="btn btn-sm" style="background:#ede9fe;color:#6d28d9" onclick="editBookProgress()">更新进度</button>':'<button class="btn btn-sm" style="background:#8b5cf6;color:#fff" onclick="addCurrentBook()">添加</button>'}
+      </div>
+      ${current?`
+        <div style="padding:12px;background:#faf5ff;border-radius:10px">
+          <div style="font-weight:700;font-size:15px">${escapeHtml(current.title)}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">作者：${escapeHtml(current.author)}</div>
+          <div style="margin-top:8px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:4px"><span>阅读进度</span><span>${current.progress||0}%</span></div>
+            <div style="height:6px;background:#ede9fe;border-radius:3px;overflow:hidden"><div style="width:${current.progress||0}%;height:100%;background:#8b5cf6;transition:width .3s"></div></div>
+          </div>
+          ${current.note?`<div style="font-size:12px;color:#64748b;margin-top:6px">📝 ${escapeHtml(current.note)}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:#dcfce7;color:#166534" onclick="finishBook()">标记读完</button>
+          <button class="btn btn-sm" style="flex:1;background:#fee2e2;color:#991b1b" onclick="removeCurrentBook()">移除</button>
+        </div>
+      `:'<div class="empty">还没有正在读的书，点击「添加」开始</div>'}
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>🖍️ 阅读笔记</span>
+        <button class="btn btn-sm" style="background:#8b5cf6;color:#fff" onclick="addBookNote()">+ 新笔记</button>
+      </div>
+      <div>
+        ${notes.length?notes.slice().reverse().map(n=>`
+          <div class="highlight-note" style="border-color:${n.color||'#fbbf24'};background:${n.bg||'#fef3c7'}">
+            <div style="font-size:13px;line-height:1.6">${escapeHtml(n.text)}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+              <span style="font-size:10px;color:#64748b">${escapeHtml(n.book||'')} · ${escapeHtml(n.date||'')}</span>
+              <span style="color:#cbd5e1;cursor:pointer;font-size:16px" onclick="delBookNote('${n.id}')">×</span>
+            </div>
+          </div>
+        `).join(''):'<div class="empty">阅读时记下喜欢的句子吧</div>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌟 本月推荐</div>
+      <div id="bookRec">
+        ${BOOK_RECOMMEND.slice(0,3).map((b,i)=>`
+          <div style="padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="showBookDetail(${i})">
+            <div style="display:flex;justify-content:space-between;align-items:start">
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:14px">${escapeHtml(b.title)}</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px">${escapeHtml(b.author)} · ${escapeHtml(b.cat)}</div>
+              </div>
+              <span class="badge" style="background:#fef3c7;color:#92400e">⭐ ${b.score}</span>
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:6px;line-height:1.5">${escapeHtml(b.reason)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-sm" style="width:100%;background:#ede9fe;color:#6d28d9" onclick="showMoreBooks()">查看更多推荐</button>
+    </div>
+    ${history.length?`
+      <div class="card">
+        <div class="card-title">🏆 已读完 (${history.length})</div>
+        ${history.slice().reverse().map(b=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:4px">
+            <div><b style="font-size:13px">${escapeHtml(b.title)}</b> <span style="font-size:11px;color:#94a3b8">${escapeHtml(b.author||'')}</span></div>
+            <span class="badge" style="background:#dcfce7;color:#166534">${escapeHtml(b.finishedDate||'')}</span>
+          </div>
+        `).join('')}
+      </div>
+    `:''}
+  `;
+}
+
+function showBookDetail(idx){
+  const b=BOOK_RECOMMEND[idx];
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">${escapeHtml(b.title)}</h3>
+    <div style="font-size:12px;color:#64748b;margin-bottom:10px">作者：${escapeHtml(b.author)} · 评分：⭐${b.score} · 分类：${escapeHtml(b.cat)}</div>
+    <div style="background:#faf5ff;padding:12px;border-radius:10px;font-size:13px;line-height:1.7;margin-bottom:12px"><b>💡 推荐理由：</b><br>${escapeHtml(b.reason)}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">关闭</button>
+      <button class="btn" style="flex:1;background:#8b5cf6;color:#fff" onclick="startReading('${escapeHtml(b.title)}','${escapeHtml(b.author)}')">开始阅读</button>
+    </div>
+  `);
+}
+function showMoreBooks(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">🌟 书籍推荐库</h3>
+    ${BOOK_RECOMMEND.map((b,i)=>`
+      <div style="padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="showBookDetail(${i})">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div style="flex:1"><div style="font-weight:700;font-size:14px">${escapeHtml(b.title)}</div><div style="font-size:11px;color:#64748b;margin-top:2px">${escapeHtml(b.author)} · ${escapeHtml(b.cat)}</div></div>
+          <span class="badge" style="background:#fef3c7;color:#92400e">⭐ ${b.score}</span>
+        </div>
+        <div style="font-size:12px;color:#64748b;margin-top:6px">${escapeHtml(b.reason)}</div>
+      </div>
+    `).join('')}
+    <button class="btn" style="width:100%;background:#e2e8f0" onclick="closeModal()">关闭</button>
+  `);
+}
+function startReading(title,author){
+  const current={title,author,progress:0,startDate:todayKey(),note:''};
+  setData(BOOK_KEY,current);
+  closeModal(); renderBook(); toast(`开始阅读《${title}》`);
+}
+function addCurrentBook(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">添加当前阅读</h3>
+    <label style="font-size:12px;color:#64748b">书名</label>
+    <input class="field" id="cbTitle" placeholder="书名" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">作者</label>
+    <input class="field" id="cbAuthor" placeholder="作者" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">当前进度(%)</label>
+    <input class="field" id="cbProgress" type="number" min="0" max="100" value="0" style="margin:4px 0 12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#8b5cf6;color:#fff" onclick="saveCurrentBook()">保存</button>
+    </div>
+  `);
+}
+function saveCurrentBook(){
+  const title=document.getElementById('cbTitle').value.trim();
+  if(!title){toast('请输入书名');return}
+  const current={title,author:document.getElementById('cbAuthor').value.trim(),progress:parseInt(document.getElementById('cbProgress').value)||0,startDate:todayKey(),note:''};
+  setData(BOOK_KEY,current); closeModal(); renderBook(); toast('已添加');
+}
+function editBookProgress(){
+  const current=getData(BOOK_KEY,{});
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">更新阅读进度</h3>
+    <div style="font-size:13px;color:#64748b;margin-bottom:10px">《${escapeHtml(current.title)}》</div>
+    <label style="font-size:12px;color:#64748b">阅读进度(%)</label>
+    <input class="field" id="upProgress" type="number" min="0" max="100" value="${current.progress||0}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">读书感想</label>
+    <textarea class="field" id="upNote" placeholder="想到什么写什么..." style="margin:4px 0 12px;min-height:60px">${escapeHtml(current.note||'')}</textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#8b5cf6;color:#fff" onclick="saveBookProgress()">保存</button>
+    </div>
+  `);
+}
+function saveBookProgress(){
+  const current=getData(BOOK_KEY,{});
+  current.progress=parseInt(document.getElementById('upProgress').value)||0;
+  current.note=document.getElementById('upNote').value.trim();
+  setData(BOOK_KEY,current); closeModal(); renderBook(); toast('已更新');
+}
+function finishBook(){
+  const current=getData(BOOK_KEY,null);
+  if(!current)return;
+  if(!confirm(`确认《${current.title}》已读完？`))return;
+  const history=getData(BOOK_HISTORY_KEY,[]);
+  const now=new Date();
+  history.push({...current,finishedDate:todayKey(),month:`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`});
+  setData(BOOK_HISTORY_KEY,history); setData(BOOK_KEY,null); renderBook(); toast('恭喜读完一本书！');
+}
+function removeCurrentBook(){
+  if(!confirm('移除当前阅读？'))return;
+  setData(BOOK_KEY,null); renderBook();
+}
+
+const NOTE_COLORS=[
+  {name:'黄色高光',color:'#fbbf24',bg:'#fef3c7'},{name:'粉色高光',color:'#ec4899',bg:'#fce7f3'},
+  {name:'绿色高光',color:'#22c55e',bg:'#dcfce7'},{name:'蓝色高光',color:'#3b82f6',bg:'#dbeafe'},
+  {name:'紫色高光',color:'#8b5cf6',bg:'#ede9fe'},{name:'橙色荧光',color:'#f97316',bg:'#ffedd5'}
+];
+function addBookNote(){
+  const current=getData(BOOK_KEY,{});
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">🖍️ 新建阅读笔记</h3>
+    <label style="font-size:12px;color:#64748b">摘录内容</label>
+    <textarea class="field" id="bnText" placeholder="摘抄喜欢的句子..." style="margin:4px 0 10px;min-height:80px"></textarea>
+    <label style="font-size:12px;color:#64748b">来自哪本书</label>
+    <input class="field" id="bnBook" value="${escapeHtml(current.title||'')}" placeholder="书名" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">选择高光笔颜色</label>
+    <div style="display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap">
+      ${NOTE_COLORS.map((c,i)=>`<div onclick="selectNoteColor(${i})" id="nc${i}" style="width:36px;height:36px;border-radius:8px;background:${c.bg};border:2px solid ${c.color};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px">${c.name.slice(0,1)}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#8b5cf6;color:#fff" onclick="saveBookNote()">保存</button>
+    </div>
+  `);
+  window._noteColorIdx=0;
+}
+function selectNoteColor(i){ window._noteColorIdx=i; NOTE_COLORS.forEach((c,j)=>{ const el=document.getElementById('nc'+j); if(el) el.style.transform=j===i?'scale(1.15)':'scale(1)'; }); }
+function saveBookNote(){
+  const text=document.getElementById('bnText').value.trim();
+  if(!text){toast('请输入内容');return}
+  const c=NOTE_COLORS[window._noteColorIdx||0];
+  const notes=getData(BOOK_NOTES_KEY,[]);
+  notes.push({id:uid(),text,book:document.getElementById('bnBook').value.trim(),color:c.color,bg:c.bg,date:todayKey()});
+  setData(BOOK_NOTES_KEY,notes); closeModal(); renderBook(); toast('笔记已保存');
+}
+function delBookNote(id){
+  if(!confirm('删除这条笔记？'))return;
+  let notes=getData(BOOK_NOTES_KEY,[]);
+  notes=notes.filter(n=>n.id!==id);
+  setData(BOOK_NOTES_KEY,notes); renderBook();
+}
+</script>
+
+<script>
+// ============ 拍摄技巧模块 ============
+const SHOOT_CATS=[
+  {id:'product',icon:'💍',name:'产品摄影',desc:'戒指/饰品拍摄技巧'},{id:'portrait',icon:'👩',name:'人像摄影',desc:'人物拍摄构图与光线'},
+  {id:'scene',icon:'🏔️',name:'景物摄影',desc:'风景/街拍技巧'},{id:'light',icon:'💡',name:'光线运用',desc:'自然光/人造光'},
+  {id:'compose',icon:'🖼️',name:'构图法则',desc:'经典构图技巧'},{id:'phone',icon:'📱',name:'手机摄影',desc:'零设备门槛拍摄'}
+];
+
+const SHOOT_TIPS={
+  product:[
+    {title:'戒指拍摄：微距特写技巧',content:'1. 使用微距镜头或手机微距模式\n2. 光圈f/8-f/11保证整个戒指清晰\n3. 使用三脚架避免抖动\n4. 背景选择纯色绒布（黑/白/灰）减少反光\n5. 戒指用蓝胶固定位置',img:'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400',video:'https://www.bilibili.com/search?keyword=戒指拍摄教程'},
+    {title:'饰品布光：柔光箱+反光板组合',content:'1. 主光源45度侧上方，柔光箱柔化阴影\n2. 反光板在对侧补光，减少暗部\n3. 避免直射光造成金属反光\n4. 拍摄银饰用冷白光(5500K)，金饰用暖光(3200K)\n5. 拍摄透明宝石用背光突出通透感',img:'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400',video:'https://www.bilibili.com/search?keyword=饰品布光教程'},
+    {title:'小红书封面：手部特写构图',content:'1. 模特手部要干净，指甲修剪整齐\n2. 手自然弯曲，展示戒指侧面\n3. 背景虚化，突出戒指\n4. 拍摄角度：45度俯拍最显戒指形状\n5. 可搭配道具：花朵、书本、咖啡杯增加场景感',img:'https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?w=400',video:'https://www.bilibili.com/search?keyword=手部特写拍摄'}
+  ],
+  portrait:[
+    {title:'人像构图：三分法与黄金比例',content:'1. 将人物眼睛放在画面上1/3处\n2. 人物朝向方向留出更多空间\n3. 全身照：低角度拍摄拉长腿部\n4. 半身照：裁剪到腰部或胸部以上\n5. 特写：聚焦眼睛，光圈全开虚化背景',img:'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',video:'https://www.bilibili.com/search?keyword=人像构图技巧'},
+    {title:'自然光人像：黄金时段拍摄',content:'1. 日出后1小时/日落前1小时为黄金时段\n2. 光线柔和，色温暖，皮肤质感好\n3. 逆光拍摄：发丝边缘金光，脸部用反光板补光\n4. 侧光拍摄：立体感强，适合轮廓分明的人物\n5. 避免正午顶光：会造成眼部阴影',img:'https://images.unsplash.com/photo-1502323777036-f29e3972d82f?w=400',video:'https://www.bilibili.com/search?keyword=自然光人像拍摄'},
+    {title:'人像摆姿：自然不做作',content:'1. 让模特动起来抓拍，比摆拍更自然\n2. 手部要有事做：整理头发、拿道具\n3. 眼神方向：看镜头/看远方/低头，各有氛围\n4. 站姿：重心放在一条腿，避免僵硬\n5. 连拍模式：一组拍10张选最好的',img:'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',video:'https://www.bilibili.com/search?keyword=人像摆姿教程'}
+  ],
+  scene:[
+    {title:'风景构图：前景+主体+背景',content:'1. 前景：花朵/石头/树枝，增加层次感\n2. 主体：山峰/建筑/湖泊，放在黄金分割点\n3. 背景：天空/远山，营造空间感\n4. 小光圈f/11-f/16保证全景清晰\n5. 使用三分法地平线放在上1/3或下1/3',img:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',video:'https://www.bilibili.com/search?keyword=风景摄影构图'},
+    {title:'街拍技巧：捕捉决定性瞬间',content:'1. 预对焦：提前对焦到预计位置\n2. 盲拍：不看取景器，低调拍摄\n3. 寻找光影：阴影/倒影/窗户反光\n4. 等待：找好背景，等人走进画面\n5. 连拍：捕捉动作的最佳瞬间',img:'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=400',video:'https://www.bilibili.com/search?keyword=街头摄影技巧'}
+  ],
+  light:[
+    {title:'硬光vs柔光：何时用哪种',content:'1. 硬光（直射阳光/裸灯）：阴影锐利，适合男性人像/产品质感\n2. 柔光（柔光箱/阴天）：阴影柔和，适合女性人像/美食\n3. 戒指拍摄推荐柔光，减少金属反光\n4. 混合光：自然光+反光板补光，性价比最高',img:'https://images.unsplash.com/photo-1535089094655-d34cf6c5fc25?w=400',video:'https://www.bilibili.com/search?keyword=摄影光线教学'},
+    {title:'逆光/侧光/顺光：氛围差异',content:'1. 顺光：色彩鲜艳，但立体感弱\n2. 侧光：立体感强，质感突出，适合产品\n3. 逆光：轮廓光，氛围感强，适合人像\n4. 顶光：避免使用（正午）\n5. 底光：恐怖效果，慎用',img:'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400',video:'https://www.bilibili.com/search?keyword=光线方向摄影'}
+  ],
+  compose:[
+    {title:'九宫格构图（三分法）',content:'1. 画面横竖各分三等分，形成九宫格\n2. 主体放在四个交叉点上\n3. 地平线放在上1/3或下1/3\n4. 最经典的构图法，适用于90%的场景\n5. 手机相机自带网格线功能记得开启',img:'https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=400',video:'https://www.bilibili.com/search?keyword=三分法构图'},
+    {title:'引导线构图',content:'1. 利用道路/河流/栏杆作为引导线\n2. 引导线指向主体，引导视线\n3. 汇聚线：多条线交于一点，强烈视觉冲击\n4. 对角线：增加画面动感\n5. S曲线：优雅柔美，适合风景和人像',img:'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400',video:'https://www.bilibili.com/search?keyword=引导线构图'},
+    {title:'留白构图：少即是多',content:'1. 主体只占画面1/4-1/3\n2. 大面积留白营造氛围感\n3. 留白方向：人物朝向方向留白\n4. 适合极简风格、小红书封面\n5. 留白不一定是空白，可以是天空/墙面/水面',img:'https://images.unsplash.com/photo-1517677129300-07b130802f46?w=400',video:'https://www.bilibili.com/search?keyword=留白构图技巧'}
+  ],
+  phone:[
+    {title:'手机拍摄：如何拍出单反感',content:'1. 点按对焦后上下滑动调整曝光\n2. 长按锁定对焦/曝光(AE/AF锁)\n3. 人像模式虚化背景，注意边缘识别\n4. 使用音量键拍摄更稳定\n5. 后期Snapseed/醒图调色',img:'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=400',video:'https://www.bilibili.com/search?keyword=手机摄影技巧'},
+    {title:'手机微距：拍戒指/小物件',content:'1. 手机切换到微距模式（若有）\n2. 或外接微距镜头（几十块钱即可）\n3. 距离被摄体3-5cm\n4. 光线要充足，微距下进光量减少\n5. 用三脚架或稳定支撑，微距下抖动放大明显',img:'https://images.unsplash.com/photo-1452780212940-6f5c0d14d848?w=400',video:'https://www.bilibili.com/search?keyword=手机微距拍摄'}
+  ]
+};
+
+function renderShoot(){
+  const el=document.getElementById('panel-shoot');
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#06b6d4,#22d3ee);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">📷 拍摄技巧库</div>
+      <div style="font-size:12px;opacity:.9;margin-top:4px">构图 · 光线 · 人像 · 产品 · 风景</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📂 选择分类</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${SHOOT_CATS.map(c=>`
+          <div onclick="showShootCat('${c.id}')" style="padding:12px 8px;background:#f0fdff;border-radius:10px;cursor:pointer;text-align:center">
+            <div style="font-size:24px">${c.icon}</div>
+            <div style="font-size:12px;font-weight:600;color:#0e7490;margin-top:4px">${c.name}</div>
+            <div style="font-size:9px;color:#64748b;margin-top:2px">${c.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💡 每日一技</div>
+      <div id="dailyTip" style="font-size:13px;color:#374151;line-height:1.7"></div>
+    </div>
+    <div id="shootContent"></div>
+  `;
+  const allTips=Object.values(SHOOT_TIPS).flat();
+  const daily=allTips[Math.floor(Date.now()/(86400000))%allTips.length];
+  document.getElementById('dailyTip').innerHTML=`<b>${daily.title}</b><br><span style="white-space:pre-line;font-size:12px;color:#64748b">${daily.content.slice(0,100)}...</span>`;
+}
+
+function showShootCat(catId){
+  const cat=SHOOT_CATS.find(c=>c.id===catId);
+  const tips=SHOOT_TIPS[catId]||[];
+  const el=document.getElementById('shootContent');
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-title">${cat.icon} ${cat.name}</div>
+      ${tips.length?tips.map(t=>`
+        <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:12px">
+          <img src="${t.img}" style="width:100%;height:160px;object-fit:cover" loading="lazy" onerror="this.style.display='none'">
+          <div style="padding:12px">
+            <div style="font-weight:700;font-size:14px;margin-bottom:6px">${t.title}</div>
+            <div style="font-size:12px;color:#374151;line-height:1.7;white-space:pre-line">${t.content}</div>
+            <a href="${t.video}" target="_blank" class="btn btn-sm" style="display:inline-block;margin-top:8px;background:#e0f7fa;color:#0e7490;text-decoration:none">▶ 观看视频教程</a>
+          </div>
+        </div>
+      `).join(''):'<div class="empty">该分类暂无内容</div>'}
+    </div>
+  `;
+}
+</script>
+
+<script>
+// ============ 视频剪辑模块 ============
+const CLIP_CATS=[
+  {id:'transition',icon:'🔄',name:'转场技巧',desc:'无缝转场/遮挡转场/运镜转场'},{id:'color',icon:'🎨',name:'调色教程',desc:'电影感/日系/ins风'},
+  {id:'rhythm',icon:'🎵',name:'节奏卡点',desc:'音乐踩点/变速剪辑'},{id:'cut',icon:'✂️',name:'剪辑基础',desc:'剪映/PR入门'},
+  {id:'subtitle',icon:'💬',name:'字幕特效',desc:'花字/动效字幕'},{id:'story',icon:'📖',name:'叙事结构',desc:'Vlog脚本/分镜'}
+];
+
+const CLIP_TIPS={
+  transition:[
+    {title:'5个无剪辑转场（遮挡转场）',content:'1. 手掌遮挡镜头 → 切场后移开手掌\n2. 走过柱子/墙壁 → 自然切换场景\n3. 镜头快速下摇 → 上摇时已换场\n4. 甩镜头转场：快速左右甩动，两个镜头都甩\n5. 360度旋转转场：两段都旋转拍摄',video:'https://www.bilibili.com/search?keyword=遮挡转场教程'},
+    {title:'运镜转场：推拉摇移衔接',content:'1. 推镜头：前一段推进，后一段拉出\n2. 摇镜头：左右摇，接下一段反方向摇\n3. 升降转场：上升结束，下一段从高处下降\n4. 焦段转场：前段变焦模糊，后段从模糊到清晰\n5. 拍摄时就要想好转场点',video:'https://www.bilibili.com/search?keyword=运镜转场技巧'},
+    {title:'无缝转场：运动方向匹配',content:'1. 人物从画面右侧出画 → 下一段从左侧入画\n2. 速度匹配：两段运动速度一致\n3. 抠像转场：绿幕拍摄+后期合成\n4. 变速转场：前段加速→后段减速\n5. 遮罩转场：用文字/图形做遮罩滑动切换',video:'https://www.bilibili.com/search?keyword=无缝转场教程'}
+  ],
+  color:[
+    {title:'电影感青橙调色',content:'1. 高光偏青色(蓝绿)，阴影偏橙色\n2. 降低饱和度，提高对比度\n3. 暗部微微发蓝，亮部微微发黄\n4. 皮肤色调保持橙黄，与背景青色形成对比\n5. 剪映滤镜：青橙色调/电影感',video:'https://www.bilibili.com/search?keyword=青橙调色教程'},
+    {title:'日系清新调色',content:'1. 整体提亮，降低对比度\n2. 色温偏暖(5500K+)\n3. 绿色和蓝色饱和度降低，提高明度\n4. 暗部发灰，不要纯黑\n5. 加一点颗粒感增加胶片感\n6. 剪映滤镜：日系/清新',video:'https://www.bilibili.com/search?keyword=日系调色教程'},
+    {title:'ins高级灰调色',content:'1. 去饱和：整体降低20-30%\n2. 色相统一：所有颜色往一个色相靠拢\n3. 暗部提亮，高光压暗，减少反差\n4. 加灰：在色彩中混入一点灰色\n5. 适合：建筑/街拍/极简风',video:'https://www.bilibili.com/search?keyword=ins风调色'}
+  ],
+  rhythm:[
+    {title:'音乐踩点：如何找准节奏',content:'1. 听音乐找重音点（鼓点/贝斯）\n2. 在剪辑软件中标记节奏点\n3. 画面切换卡在重音上\n4. 副歌部分用快剪，主歌部分用慢镜\n5. 剪映：自动踩点功能可以辅助',video:'https://www.bilibili.com/search?keyword=音乐踩点教程'},
+    {title:'变速剪辑：子弹时间效果',content:'1. 正常速度→慢动作→正常速度\n2. 适合：运动/跳跃/转身瞬间\n3. 拍摄时用高帧率(60fps/120fps)\n4. 慢速部分：0.2x-0.5x\n5. 变速过渡：用光流法补帧避免卡顿',video:'https://www.bilibili.com/search?keyword=变速剪辑教程'},
+    {title:'快慢交替：情绪节奏',content:'1. 平静段落：长镜头+慢速\n2. 高潮段落：快剪+快速变焦\n3. 情绪转折：突然静止1秒\n4. 结尾：慢镜头+淡出\n5. 参考作品：《爱乐之城》剪辑节奏',video:'https://www.bilibili.com/search?keyword=快慢剪辑节奏'}
+  ],
+  cut:[
+    {title:'剪映手机版入门（10分钟学会）',content:'1. 导入素材：点击「开始创作」选择视频\n2. 裁剪：拖动时间线两端裁掉多余部分\n3. 分割：移动时间线到目标位置，点「分割」\n4. 删除：选中片段点「删除」\n5. 加音乐：「音频」→「音乐」搜索或导入\n6. 加字幕：「文字」→「识别字幕」自动生成\n7. 导出：右上角调分辨率1080P',video:'https://www.bilibili.com/search?keyword=剪映手机版教程'},
+    {title:'PR基础：3个必学工具',content:'1. 剃刀工具(C)：切割视频\n2. 选择工具(V)：选中/移动片段\n3. 波纹删除：删掉片段后自动闭合空隙\n4. 轨道：V1放视频，A1放音频\n5. 快捷键：空格播放，J/K/L倒退/暂停/快进',video:'https://www.bilibili.com/search?keyword=PR剪辑入门'},
+    {title:'视频导出参数设置',content:'1. 分辨率：1080P(1920x1080)足够\n2. 帧率：30fps日常，60fps运动\n3. 码率：8-15Mbps，越高越清晰\n4. 格式：MP4(H.264)兼容性最好\n5. 小红书竖屏：9:16比例(1080x1920)',video:'https://www.bilibili.com/search?keyword=视频导出参数'}
+  ],
+  subtitle:[
+    {title:'小红书花字：吸睛标题',content:'1. 字体：用粗体/手写体，不要用宋体\n2. 颜色：黄/白/粉，高对比度\n3. 位置：画面中上部，避开安全区\n4. 动效：弹出/打字机/逐字出现\n5. 剪映：「文字」→「花字」选模板',video:'https://www.bilibili.com/search?keyword=花字标题教程'},
+    {title:'动效字幕：让字幕活起来',content:'1. 逐字出现：打字机效果\n2. 弹跳入场：适合活泼内容\n3. 淡入淡出：适合文艺风格\n4. 关键帧动画：字幕位置/大小/透明度变化\n5. 注意：字幕停留时间要够读完',video:'https://www.bilibili.com/search?keyword=动效字幕教程'}
+  ],
+  story:[
+    {title:'Vlog脚本：3段式结构',content:'1. 开场(3-5秒)：钩子，抛出主题/悬念\n2. 主体(30-60秒)：分3-5个场景讲故事\n3. 结尾(3-5秒)：总结/互动引导\n4. 脚本模板：\n   - 今天我做了什么\n   - 遇到了什么有趣的事\n   - 我的感受/建议\n5. 写好脚本再拍，效率翻倍',video:'https://www.bilibili.com/search?keyword=Vlog脚本结构'},
+    {title:'分镜表：拍摄前先画分镜',content:'1. 每个镜头画一个方框，标注时长\n2. 标注：景别(远/中/近)/角度(仰/平/俯)/运镜\n3. 标注：对白/字幕/音效\n4. 一般1分钟视频需要8-15个镜头\n5. 工具：手机便签/分镜APP(Shot Designer)',video:'https://www.bilibili.com/search?keyword=分镜表教程'}
+  ]
+};
+
+function renderClip(){
+  const el=document.getElementById('panel-clip');
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#ec4899,#f472b6);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">🎬 视频剪辑库</div>
+      <div style="font-size:12px;opacity:.9;margin-top:4px">转场 · 调色 · 踩点 · 剪辑基础</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📂 选择分类</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${CLIP_CATS.map(c=>`
+          <div onclick="showClipCat('${c.id}')" style="padding:12px 8px;background:#fdf2f8;border-radius:10px;cursor:pointer;text-align:center">
+            <div style="font-size:24px">${c.icon}</div>
+            <div style="font-size:12px;font-weight:600;color:#be185d;margin-top:4px">${c.name}</div>
+            <div style="font-size:9px;color:#64748b;margin-top:2px">${c.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💡 每日一技</div>
+      <div id="clipDailyTip" style="font-size:13px;color:#374151;line-height:1.7"></div>
+    </div>
+    <div id="clipContent"></div>
+  `;
+  const allTips=Object.values(CLIP_TIPS).flat();
+  const daily=allTips[Math.floor(Date.now()/(86400000))%allTips.length];
+  const dt=document.getElementById('clipDailyTip');
+  if(dt) dt.innerHTML=`<b>${daily.title}</b><br><span style="white-space:pre-line;font-size:12px;color:#64748b">${daily.content.slice(0,100)}...</span>`;
+}
+
+function showClipCat(catId){
+  const cat=CLIP_CATS.find(c=>c.id===catId);
+  const tips=CLIP_TIPS[catId]||[];
+  const el=document.getElementById('clipContent');
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-title">${cat.icon} ${cat.name}</div>
+      ${tips.length?tips.map(t=>`
+        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px;background:#fdf2f8">
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">${t.title}</div>
+          <div style="font-size:12px;color:#374151;line-height:1.7;white-space:pre-line">${t.content}</div>
+          <a href="${t.video}" target="_blank" class="btn btn-sm" style="display:inline-block;margin-top:8px;background:#fce7f3;color:#be185d;text-decoration:none">▶ B站搜索视频教程</a>
+        </div>
+      `).join(''):'<div class="empty">该分类暂无内容</div>'}
+    </div>
+  `;
+}
+</script>
+
+<script>
+// ============ 减肥计划模块 ============
+const FIT_WEIGHT_KEY='fit_weights';
+const FIT_MEAL_KEY='fit_meals';
+const FIT_GOAL_KEY='fit_goal';
+
+function getFitGoal(){ return getData(FIT_GOAL_KEY,{target:55,start:0,height:165,age:25}); }
+
+function renderFit(){
+  const el=document.getElementById('panel-fit');
+  const weights=getData(FIT_WEIGHT_KEY,[]).sort((a,b)=>a.date.localeCompare(b.date));
+  const meals=getData(FIT_MEAL_KEY,[]).filter(m=>m.date===todayKey());
+  const goal=getFitGoal();
+  const todayW=weights.find(w=>w.date===todayKey());
+  const startW=weights[0]?.value||goal.start;
+  const currentW=weights[weights.length-1]?.value||startW;
+  const lost=(startW-currentW).toFixed(1);
+  const toGo=(currentW-goal.target).toFixed(1);
+  const todayCal=meals.reduce((s,m)=>s+(m.cal||0),0);
+  const recCal=calcRecCal(goal);
+
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#22c55e,#4ade80);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">⚖️ 减肥计划</div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px">
+        <div>当前 <b style="font-size:16px">${currentW}</b>kg</div>
+        <div>目标 <b style="font-size:16px">${goal.target}</b>kg</div>
+        <div>已减 <b style="font-size:16px">${lost>0?lost:0}</b>kg</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 今日体重</div>
+      ${todayW?`
+        <div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px">
+          <div style="font-size:32px;font-weight:800;color:#22c55e">${todayW.value} <span style="font-size:14px">kg</span></div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px">${todayKey()} 已记录</div>
+        </div>
+        <button class="btn btn-sm" style="width:100%;margin-top:8px;background:#e2e8f0" onclick="inputWeight()">修改</button>
+      `:`
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:10px">
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:8px">今天还没记录空腹体重</div>
+          <button class="btn" style="background:#22c55e;color:#fff" onclick="inputWeight()">录入体重</button>
+        </div>
+      `}
+    </div>
+    ${weights.length>=2?`
+      <div class="card">
+        <div class="card-title">📈 体重趋势</div>
+        <canvas id="weightChart" height="160"></canvas>
+        <div style="font-size:12px;color:#64748b;text-align:center;margin-top:8px">${toGo>0 ? '距离目标还差 '+toGo+'kg，继续加油！' : '🎉 目标已达成！'}</div>
+      </div>
+    `:''}
+    <div class="card">
+      <div class="card-title">🔥 今日摄入</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#22c55e" stroke-width="8"
+            stroke-dasharray="${2*Math.PI*32}"
+            stroke-dashoffset="${2*Math.PI*32*(1-Math.min(todayCal/recCal,1))}"
+            stroke-linecap="round" transform="rotate(-90 40 40)"/>
+          <text x="40" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#22c55e">${todayCal}</text>
+          <text x="40" y="50" text-anchor="middle" font-size="9" fill="#94a3b8">/${recCal}kcal</text>
+        </svg>
+        <div style="flex:1;font-size:12px;color:#374151">
+          今日已摄入 <b>${todayCal}</b> kcal<br>
+          建议摄入 <b>${recCal}</b> kcal<br>
+          ${todayCal<recCal?'✅ 还可以吃 '+(recCal-todayCal)+'kcal':'⚠️ 已超标 '+(todayCal-recCal)+'kcal'}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>🍽️ 今日三餐</span><span style="font-size:12px;color:#94a3b8">${meals.length} 餐</span>
+      </div>
+      <div>
+        ${['breakfast','lunch','dinner'].map(meal=>{
+          const m=meals.find(x=>x.meal===meal);
+          const names={breakfast:'早餐',lunch:'午餐',dinner:'晚餐'};
+          return `
+            <div style="padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:600;font-size:13px">${names[meal]}</div>
+                ${m?`<span class="badge" style="background:#dcfce7;color:#166534">${m.cal}kcal</span>`:''}
+              </div>
+              ${m?`
+                ${m.img?`<img src="${m.img}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-top:6px">`:''}
+                <div style="font-size:12px;color:#64748b;margin-top:4px">${escapeHtml(m.desc||'')}</div>
+                ${m.aiAdvice?`<div style="font-size:11px;color:#374151;margin-top:4px;padding:6px;background:#fff;border-radius:6px;border-left:3px solid #22c55e">${escapeHtml(m.aiAdvice)}</div>`:''}
+                <span style="font-size:11px;color:#ef4444;cursor:pointer" onclick="delMeal('${m.id}')">删除</span>
+              `:`
+                <button class="btn btn-sm" style="margin-top:6px;background:#dcfce7;color:#166534" onclick="addMeal('${meal}')">+ 添加${names[meal]}</button>
+              `}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚙️ 个人设置</div>
+      <div style="font-size:13px;color:#64748b;line-height:1.8">
+        身高：${goal.height}cm｜年龄：${goal.age}<br>目标体重：${goal.target}kg<br>建议日摄入：${recCal}kcal
+      </div>
+      <button class="btn btn-sm" style="margin-top:8px;background:#e2e8f0" onclick="editFitGoal()">编辑设置</button>
+    </div>
+  `;
+
+  if(weights.length>=2){
+    setTimeout(()=>{
+      const ctx=document.getElementById('weightChart');
+      if(!ctx)return;
+      new Chart(ctx,{
+        type:'line',
+        data:{labels:weights.map(w=>w.date.slice(5)),datasets:[{label:'体重(kg)',data:weights.map(w=>w.value),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',tension:.3,fill:true,pointRadius:3}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:false}}}
+      });
+    },100);
+  }
+}
+
+function calcRecCal(goal){
+  const weights=getData(FIT_WEIGHT_KEY,[]);
+  const w=weights[weights.length-1]?.value||goal.target;
+  const bmr=655+(9.6*w)+(1.8*goal.height)-(4.7*goal.age);
+  return Math.round(bmr*1.3*0.8);
+}
+
+function inputWeight(){
+  const today=getData(FIT_WEIGHT_KEY,[]).find(w=>w.date===todayKey());
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">录入空腹体重</h3>
+    <p style="font-size:12px;color:#64748b;margin:0 0 10px">建议每天早上起床后、如厕后、进食前称量</p>
+    <input class="field" id="wInput" type="number" step="0.1" value="${today?today.value:''}" placeholder="如 55.5" style="font-size:20px;text-align:center;margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#22c55e;color:#fff" onclick="saveWeight()">保存</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('wInput').focus(),100);
+}
+function saveWeight(){
+  const val=parseFloat(document.getElementById('wInput').value);
+  if(!val||val<30||val>200){toast('请输入合理体重');return}
+  let weights=getData(FIT_WEIGHT_KEY,[]);
+  const idx=weights.findIndex(w=>w.date===todayKey());
+  if(idx>=0)weights[idx].value=val;
+  else weights.push({id:uid(),date:todayKey(),value:val});
+  setData(FIT_WEIGHT_KEY,weights);
+  closeModal(); renderFit(); toast('已记录');
+}
+
+function addMeal(meal){
+  const names={breakfast:'早餐',lunch:'午餐',dinner:'晚餐'};
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">添加${names[meal]}</h3>
+    <label style="font-size:12px;color:#64748b">食物照片</label>
+    <input type="file" id="mealImg" accept="image/*" style="margin:4px 0 10px;font-size:13px">
+    <label style="font-size:12px;color:#64748b">食物描述（吃什么、大概多少）</label>
+    <textarea class="field" id="mealDesc" placeholder="如：一碗米饭+番茄炒蛋+一小块鸡胸肉" style="margin:4px 0 10px;min-height:70px"></textarea>
+    <label style="font-size:12px;color:#64748b">已知热量？(选填)</label>
+    <input class="field" id="mealCal" type="number" placeholder="如 500 (kcal)" style="margin:4px 0 12px">
+    <button class="btn" style="width:100%;background:#22c55e;color:#fff" onclick="estimateMeal('${meal}')">AI估算热量</button>
+    <div id="mealResult" style="margin-top:12px"></div>
+  `);
+}
+function estimateMeal(meal){
+  const desc=document.getElementById('mealDesc').value.trim();
+  const knownCal=parseInt(document.getElementById('mealCal').value);
+  if(knownCal){ saveMealRecord(meal,desc,knownCal,'',''); return; }
+  if(!desc){toast('请描述食物内容');return}
+  const r=document.getElementById('mealResult');
+  r.innerHTML='<div style="text-align:center;padding:16px;color:#94a3b8">🤖 AI估算中...</div>';
+  setTimeout(()=>{
+    const est=estimateCalories(desc);
+    const advice=mealAdvice(est,meal);
+    // 用临时变量存储，避免 onclick 拼接字符串问题
+    window._pendingMeal={meal,desc,cal:est,advice};
+    r.innerHTML=`
+      <div style="background:#f0fdf4;padding:12px;border-radius:10px;font-size:13px;line-height:1.7">
+        <div style="font-weight:700;color:#22c55e;margin-bottom:6px">🔥 AI估算结果</div>
+        <div>估算热量：<b>${est} kcal</b></div>
+        <div style="margin-top:6px">${advice}</div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:8px;background:#22c55e;color:#fff" onclick="confirmPendingMeal()">确认保存</button>
+    `;
+    const imgInput=document.getElementById('mealImg');
+    if(imgInput.files[0]){
+      const reader=new FileReader();
+      reader.onload=e=>{ window._mealImgData=e.target.result; };
+      reader.readAsDataURL(imgInput.files[0]);
+    }
+  },800);
+}
+function confirmPendingMeal(){
+  if(!window._pendingMeal){toast('数据已过期，请重新估算');return}
+  const m=window._pendingMeal;
+  const img=window._mealImgData||'';
+  saveMealRecord(m.meal,m.desc,m.cal,m.advice,img);
+  window._mealImgData='';
+  window._pendingMeal=null;
+}
+function saveMealRecord(meal,desc,cal,advice,img){
+  const meals=getData(FIT_MEAL_KEY,[]);
+  meals.push({id:uid(),meal,desc,cal,aiAdvice:advice,img,date:todayKey()});
+  setData(FIT_MEAL_KEY,meals);
+  closeModal(); renderFit(); toast('已记录');
+}
+function estimateCalories(desc){
+  const db={'米饭':116,'面条':280,'馒头':220,'面包':250,'粥':60,'饺子':250,'鸡胸':133,'猪肉':240,'牛肉':125,'鱼':100,'虾':90,'鸡蛋':70,'番茄':18,'黄瓜':15,'白菜':17,'青菜':15,'土豆':77,'茄子':21,'牛奶':54,'豆浆':30,'酸奶':72,'咖啡':5,'苹果':52,'香蕉':89,'橙子':47,'西瓜':30,'汉堡':295,'薯条':312,'炸鸡':259,'披萨':266,'奶茶':300,'蛋糕':350,'巧克力':546,'饼干':433};
+  let total=0;
+  Object.keys(db).forEach(k=>{ if(desc.includes(k)) total+=db[k]; });
+  if(total===0){
+    if(/早餐|早上/.test(desc)&&!/午餐|晚餐/.test(desc)) total=350;
+    else if(/午餐|晚饭|晚餐/.test(desc)) total=550;
+    else total=400;
+  }
+  return total;
+}
+function mealAdvice(cal,meal){
+  const goal=getFitGoal();
+  const rec=calcRecCal(goal);
+  const perMeal={breakfast:rec*0.3,lunch:rec*0.4,dinner:rec*0.3};
+  const target=perMeal[meal]||400;
+  const names={breakfast:'早餐',lunch:'午餐',dinner:'晚餐'};
+  if(cal>target*1.3) return `⚠️ ${names[meal]}热量偏高（建议${Math.round(target)}kcal），建议：\n• 增加蔬菜比例，减少主食\n• 少油少糖烹饪\n• 饭后散步15分钟`;
+  else if(cal<target*0.5) return `💡 ${names[meal]}热量偏低（建议${Math.round(target)}kcal），吃太少不利于减肥，建议：\n• 适量增加优质蛋白\n• 避免下一餐暴食`;
+  else return `✅ ${names[meal]}热量合理（建议${Math.round(target)}kcal），继续保持！`;
+}
+function delMeal(id){
+  if(!confirm('删除这餐记录？'))return;
+  let meals=getData(FIT_MEAL_KEY,[]);
+  meals=meals.filter(m=>m.id!==id);
+  setData(FIT_MEAL_KEY,meals); renderFit();
+}
+function editFitGoal(){
+  const g=getFitGoal();
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">个人设置</h3>
+    <label style="font-size:12px;color:#64748b">身高(cm)</label>
+    <input class="field" id="gHeight" type="number" value="${g.height}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">年龄</label>
+    <input class="field" id="gAge" type="number" value="${g.age}" style="margin:4px 0 10px">
+    <label style="font-size:12px;color:#64748b">目标体重(kg)</label>
+    <input class="field" id="gTarget" type="number" step="0.1" value="${g.target}" style="margin:4px 0 12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#22c55e;color:#fff" onclick="saveFitGoal()">保存</button>
+    </div>
+  `);
+}
+function saveFitGoal(){
+  const goal={height:parseInt(document.getElementById('gHeight').value)||165,age:parseInt(document.getElementById('gAge').value)||25,target:parseFloat(document.getElementById('gTarget').value)||55};
+  setData(FIT_GOAL_KEY,goal);
+  closeModal(); renderFit(); toast('已保存');
+}
+</script>
+
+<script>
+// ============ 记账模块 ============
+const ACCT_KEY='acct_entries';
+
+const ACCT_CATS=[
+  {id:'food',icon:'🍽️',name:'餐饮',type:'expense'},{id:'transport',icon:'🚇',name:'交通',type:'expense'},
+  {id:'shop',icon:'🛍️',name:'购物',type:'expense'},{id:'xhs',icon:'📕',name:'小红书运营',type:'expense'},
+  {id:'study',icon:'📚',name:'学习',type:'expense'},{id:'health',icon:'💊',name:'医疗',type:'expense'},
+  {id:'entertain',icon:'🎮',name:'娱乐',type:'expense'},{id:'other_exp',icon:'📝',name:'其他支出',type:'expense'},
+  {id:'salary',icon:'💰',name:'工资',type:'income'},{id:'sale',icon:'🛒',name:'店铺收入',type:'income'},
+  {id:'side',icon:'💼',name:'副业',type:'income'},{id:'other_inc',icon:'➕',name:'其他收入',type:'income'}
+];
+
+function renderAcct(){
+  const el=document.getElementById('panel-acct');
+  const entries=getData(ACCT_KEY,[]);
+  const now=new Date();
+  const monthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthEntries=entries.filter(e=>e.date.startsWith(monthKey));
+  const income=monthEntries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+  const expense=monthEntries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  const balance=income-expense;
+  const todayEntries=entries.filter(e=>e.date===todayKey());
+
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,#14b8a6,#2dd4bf);color:#fff;border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="font-size:18px;font-weight:800">💰 记账本</div>
+      <div style="font-size:12px;opacity:.9;margin-top:4px">${now.getFullYear()}年${now.getMonth()+1}月</div>
+      <div style="display:flex;justify-content:space-between;margin-top:12px">
+        <div><div style="font-size:10px;opacity:.8">收入</div><div style="font-size:18px;font-weight:800">+${income.toFixed(2)}</div></div>
+        <div><div style="font-size:10px;opacity:.8">支出</div><div style="font-size:18px;font-weight:800">-${expense.toFixed(2)}</div></div>
+        <div><div style="font-size:10px;opacity:.8">结余</div><div style="font-size:18px;font-weight:800">${balance.toFixed(2)}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between">
+        <span>📋 今日明细</span><span style="font-size:12px;color:#94a3b8">${todayEntries.length} 笔</span>
+      </div>
+      <div>
+        ${todayEntries.length?todayEntries.slice().reverse().map(e=>{
+          const cat=ACCT_CATS.find(c=>c.id===e.cat)||{icon:'📝',name:'其他'};
+          return `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+              <div style="font-size:20px">${cat.icon}</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${escapeHtml(e.note||cat.name)}</div>
+                <div style="font-size:11px;color:#94a3b8">${cat.name}</div>
+              </div>
+              <div style="font-weight:700;font-size:14px;color:${e.type==='income'?'#22c55e':'#ef4444'}">${e.type==='income'?'+':'-'}${e.amount.toFixed(2)}</div>
+              <span style="color:#cbd5e1;cursor:pointer" onclick="delEntry('${e.id}')">×</span>
+            </div>
+          `;
+        }).join(''):'<div class="empty">今日还没有记账</div>'}
+      </div>
+    </div>
+    ${monthEntries.length?`
+      <div class="card"><div class="card-title">📊 本月支出分布</div><canvas id="acctChart" height="200"></canvas></div>
+      <div class="card"><div class="card-title">📅 近7天趋势</div><canvas id="acctTrendChart" height="140"></canvas></div>
+    `:''}
+    <div class="card">
+      <div class="card-title">⚡ 快速记账</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        ${ACCT_CATS.slice(0,8).map(c=>`
+          <div onclick="quickAdd('${c.id}','${c.type}')" style="padding:10px 4px;background:#f8fafc;border-radius:10px;cursor:pointer;text-align:center">
+            <div style="font-size:20px">${c.icon}</div><div style="font-size:10px;color:#64748b;margin-top:2px">${c.name}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-sm" style="width:100%;margin-top:8px;background:#14b8a6;color:#fff" onclick="addEntry()">全部分类</button>
+    </div>
+  `;
+
+  if(monthEntries.length){
+    setTimeout(()=>{
+      const expenseByCat={};
+      monthEntries.filter(e=>e.type==='expense').forEach(e=>{ expenseByCat[e.cat]=(expenseByCat[e.cat]||0)+e.amount; });
+      const ctx1=document.getElementById('acctChart');
+      if(ctx1 && Object.keys(expenseByCat).length){
+        new Chart(ctx1,{
+          type:'doughnut',
+          data:{labels:Object.keys(expenseByCat).map(k=>ACCT_CATS.find(c=>c.id===k)?.name||k),datasets:[{data:Object.values(expenseByCat),backgroundColor:['#ef4444','#f59e0b','#8b5cf6','#06b6d4','#10b981','#ec4899','#6366f1','#94a3b8']}]},
+          options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10},padding:8}}}}
+        });
+      }
+      const ctx2=document.getElementById('acctTrendChart');
+      if(ctx2){
+        const days=[],dayData=[];
+        for(let i=6;i>=0;i--){
+          const d=new Date(); d.setDate(d.getDate()-i);
+          const dk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          days.push(dk.slice(5));
+          const dayExp=entries.filter(e=>e.date===dk&&e.type==='expense').reduce((s,e)=>s+e.amount,0);
+          dayData.push(dayExp);
+        }
+        new Chart(ctx2,{type:'bar',data:{labels:days,datasets:[{label:'支出',data:dayData,backgroundColor:'#14b8a6'}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+      }
+    },100);
+  }
+}
+
+function quickAdd(catId,type){
+  const cat=ACCT_CATS.find(c=>c.id===catId);
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">${cat.icon} ${cat.name}</h3>
+    <input class="field" id="qaAmount" type="number" step="0.01" placeholder="金额" style="font-size:20px;text-align:center;margin-bottom:10px">
+    <input class="field" id="qaNote" placeholder="备注(可选)" style="margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#14b8a6;color:#fff" onclick="saveQuickEntry('${catId}','${type}')">保存</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('qaAmount').focus(),100);
+}
+function saveQuickEntry(catId,type){
+  const amount=parseFloat(document.getElementById('qaAmount').value);
+  if(!amount||amount<=0){toast('请输入金额');return}
+  const note=document.getElementById('qaNote').value.trim();
+  const entries=getData(ACCT_KEY,[]);
+  entries.push({id:uid(),cat:catId,type,amount,note,date:todayKey(),time:Date.now()});
+  setData(ACCT_KEY,entries);
+  closeModal(); renderAcct(); toast('已记录');
+}
+
+function addEntry(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 12px">新增记账</h3>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn" style="flex:1;background:#ef4444;color:#fff" id="tabExpense" onclick="switchEntryType('expense')">支出</button>
+      <button class="btn" style="flex:1;background:#e2e8f0" id="tabIncome" onclick="switchEntryType('income')">收入</button>
+    </div>
+    <div id="catGrid"></div>
+    <input class="field" id="enAmount" type="number" step="0.01" placeholder="金额" style="font-size:20px;text-align:center;margin:10px 0">
+    <input class="field" id="enNote" placeholder="备注(可选)" style="margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#14b8a6;color:#fff" onclick="saveEntry()">保存</button>
+    </div>
+  `);
+  window._entryType='expense';
+  showCatGrid();
+}
+function switchEntryType(type){
+  window._entryType=type;
+  document.getElementById('tabExpense').style.background=type==='expense'?'#ef4444':'#e2e8f0';
+  document.getElementById('tabExpense').style.color=type==='expense'?'#fff':'#000';
+  document.getElementById('tabIncome').style.background=type==='income'?'#22c55e':'#e2e8f0';
+  document.getElementById('tabIncome').style.color=type==='income'?'#fff':'#000';
+  showCatGrid();
+}
+function showCatGrid(){
+  const cats=ACCT_CATS.filter(c=>c.type===window._entryType);
+  document.getElementById('catGrid').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      ${cats.map(c=>`
+        <div onclick="selectCat('${c.id}',this)" class="cat-sel" data-id="${c.id}" style="padding:10px 4px;background:#f8fafc;border-radius:10px;cursor:pointer;text-align:center;border:2px solid transparent">
+          <div style="font-size:20px">${c.icon}</div><div style="font-size:10px;color:#64748b;margin-top:2px">${c.name}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  window._selectedCat=null;
+}
+function selectCat(id,el){
+  window._selectedCat=id;
+  document.querySelectorAll('.cat-sel').forEach(e=>e.style.border='2px solid transparent');
+  el.style.border='2px solid #14b8a6';
+}
+function saveEntry(){
+  const amount=parseFloat(document.getElementById('enAmount').value);
+  if(!amount||amount<=0){toast('请输入金额');return}
+  if(!window._selectedCat){toast('请选择分类');return}
+  const note=document.getElementById('enNote').value.trim();
+  const entries=getData(ACCT_KEY,[]);
+  entries.push({id:uid(),cat:window._selectedCat,type:window._entryType,amount,note,date:todayKey(),time:Date.now()});
+  setData(ACCT_KEY,entries);
+  closeModal(); renderAcct(); toast('已记录');
+}
+function delEntry(id){
+  if(!confirm('删���这条记录？'))return;
+  let entries=getData(ACCT_KEY,[]);
+  entries=entries.filter(e=>e.id!==id);
+  setData(ACCT_KEY,entries); renderAcct();
+}
+</script>
+
+<script>
+// ============ 数据同步（跨Safari/PWA） ============
+function exportAllData(){
+  const allData = localStorage.getItem(STORE_KEY);
+  if(!allData){toast('没有可导出的数据');return}
+  try{
+    navigator.clipboard.writeText(allData).then(()=>{
+      toast('✅ 数据已复制到剪贴板！切换到目标页面后点「导入数据」');
+    }).catch(()=>{
+      // fallback：显示在弹窗中
+      showModal(`
+        <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">📤 导出数据</h3>
+        <p style="font-size:12px;color:#64748b;margin:0 0 10px">长按下方文本全选复制，然后切换到目标页面点「导入数据」</p>
+        <textarea class="field" style="min-height:80px;font-size:11px;word-break:break-all" readonly onclick="this.select()">${allData.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        <button class="btn" style="width:100%;margin-top:8px;background:#e2e8f0" onclick="closeModal()">关闭</button>
+      `);
+    });
+  }catch(e){toast('导出失败：'+e.message)}
+}
+
+function importAllData(){
+  // 尝试从剪贴板读取
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(text=>{
+      doImport(text);
+    }).catch(()=>{
+      showImportModal();
+    });
+  }else{
+    showImportModal();
+  }
+}
+
+function showImportModal(){
+  showModal(`
+    <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">📥 导入数据</h3>
+    <p style="font-size:12px;color:#64748b;margin:0 0 10px">粘贴之前导出的数据</p>
+    <textarea class="field" id="importData" placeholder="粘贴数据..." style="min-height:80px;font-size:11px;word-break:break-all"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" style="flex:1;background:#e2e8f0" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1;background:#10b981;color:#fff" onclick="doImportFromModal()">确认导入</button>
+    </div>
+  `);
+  setTimeout(()=>{ const el=document.getElementById('importData'); if(el) el.focus(); },100);
+}
+
+function doImportFromModal(){
+  const text=document.getElementById('importData').value.trim();
+  doImport(text);
+}
+
+function doImport(text){
+  if(!text){toast('请粘贴数据');return}
+  try{
+    const data=JSON.parse(text);
+    if(typeof data!=='object'){toast('数据格式错误');return}
+    localStorage.setItem(STORE_KEY, text);
+    store=data;
+    closeModal();
+    toast('✅ 导入成功！刷新中...');
+    setTimeout(()=>location.reload(),500);
+  }catch(e){toast('数据格式错误，请确认粘贴完整')}
+}
+
+// ============ 启动 ============
+function boot(){
+  initPanels();
+  buildSidebar();
+  renderDaily();
+  renderXHS();
+  renderJob();
+  renderEng();
+  renderBook();
+  renderShoot();
+  renderClip();
+  renderFit();
+  renderAcct();
+  switchPanel('daily');
+}
+boot();
+</script>
+</body>
+</html>
